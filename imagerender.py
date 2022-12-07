@@ -84,15 +84,26 @@ class ImageRender(QRunnable):
         self.line = []
 
     def line_mask(self):
-        self.mask[:] = False
-        for p in self.line:
-            cx = p.y()
-            cy = p.x()
-            radius = min(3, self.w - cx, self.h - cy)
-            dist = np.sqrt((self.xx - cx) ** 2 + (self.yy - cy) ** 2)
-            indexes = dist <= radius
-            self.mask[indexes] = True
-        self.line = []
+        # TODO: what is the point here?
+        # self.mask[:] = False
+        # x0 = 0
+        # y0 = 0
+        # for i, p in enumerate(self.line):
+        #     if i == 0:
+        #         x0 = int(p.y())
+        #         y0 = int(p.x())
+        #         continue
+        #     else:
+        #         x1 = int(p.y())
+        #         y1 = int(p.x())
+        #         xx = self.xx[x0:x1]
+        #         yy = self.yy[y0:y1]
+        #         d = (xx - x0) * (yy - y0) / (x1 - x0)
+        #         dist = (x1 - x0) * (d - (yy - y0)) / np.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+        #         indexes = dist <= 3
+        #         self.mask[indexes] = True
+        # self.line = []
+        pass
 
     def polygon_mask(self):
         self.mask[:] = False

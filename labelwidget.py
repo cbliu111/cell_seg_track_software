@@ -15,6 +15,7 @@ class LabelWidget(QWidget):
     copy_id_at_mouse_position = Signal(int, int)
     paste_id_inplace = Signal()
     delete_id_at_mouse_position = Signal(int, int)
+    draw_at_mouse_position = Signal(int, int)
 
     def __init__(self, parent=None, input_image=None, input_label=None):
         super(LabelWidget, self).__init__()
@@ -36,6 +37,8 @@ class LabelWidget(QWidget):
         q_label = numpy_to_image(self.label, QImage.Format_Indexed8)
         self.pix_image = QPixmap(q_image)
         self.pix_label = QPixmap(q_label)
+
+        self.w, self.h = self.image.shape
 
         self.scaled_image = None
         self.scaled_label = None
@@ -208,13 +211,17 @@ class LabelWidget(QWidget):
         pen.setColor(color)
         pen.setWidth(3)
         painter.setPen(pen)
-        p0 = self.brush_traj[0]
-        p1 = self.brush_traj[1]
-        painter.drawEllipse(p0, 2, 2)
-        painter.drawEllipse(p1, 2, 2)
-        painter.drawLine(p0, p1)
+        lp = QPointF()
+        for i, p in enumerate(self.brush_traj):
+            if i == 0:
+                lp = p
+                continue
+            else:
+                painter.drawLine(lp, p)
+                lp = p
 
     def set_image(self, input_image):
+        self.w, self.h = self.image.shape
         self.image = skimage.exposure.adjust_gamma(input_image, 0.5)
         self.render.set_image_shape(self.image.shape)
         q_image = numpy_to_image(self.image, QImage.Format_Grayscale16)
@@ -252,7 +259,6 @@ class LabelWidget(QWidget):
         x, y = self.get_image_position_from_mouse()
         self.select_id_at_mouse_position.emit(x, y)
 
-
     def map_from_screen(self, p: QPointF):
         """return the image coordinate from the point on the screen"""
         # the current screen has the same resolution with the scaled image
@@ -272,7 +278,9 @@ class LabelWidget(QWidget):
 
     def get_image_position_from_mouse(self):
         image_pos = self.map_from_screen(self.mouse_pos)
-        return image_pos.x(), image_pos.y()
+        x = image_pos.x() if image_pos.x() < self.w else self.w
+        y = image_pos.y() if image_pos.y() < self.h else self.h
+        return x, y
 
     def mouseMoveEvent(self, event):
         self.mouse_pos = event.pos()
@@ -335,10 +343,14 @@ class LabelWidget(QWidget):
         self.update()
 
     def draw(self):
+        """change mode to draw
+        if mouse is hanging over a label, set label value correspondingly
+        otherwise create a new label value"""
         self.draw_mode = "draw"
         self.render.draw_mode = "draw"
-        self.label_value = 1
+        x, y = self.get_image_position_from_mouse()
         self.update()
+        self.draw_at_mouse_position.emit(x, y)
 
     def erase(self):
         self.draw_mode = "erase"
@@ -347,7 +359,7 @@ class LabelWidget(QWidget):
         self.update()
 
     def keyPressEvent(self, event):
-        if event.key in self.key_route.keys():
+        if event.key() in self.key_route.keys():
             self.key_route[event.key()]()
 
     @Slot(QPixmap)

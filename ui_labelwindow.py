@@ -506,6 +506,8 @@ class Ui_LabelWindow(object):
         self.actionUNet.setObjectName("actionUNet")
         self.actionU_Net_2 = QtWidgets.QAction(LabelWindow)
         self.actionU_Net_2.setObjectName("actionU_Net_2")
+        self.actionRetrack_from_first = QtWidgets.QAction(LabelWindow)
+        self.actionRetrack_from_first.setObjectName("actionRetrack_from_first")
         self.menuFile.addAction(self.actionOpen_nd2)
         self.menuFile.addAction(self.actionOpen_dir)
         self.menuFile.addAction(self.actionLoad_hdf5)
@@ -533,6 +535,7 @@ class Ui_LabelWindow(object):
         self.menuDNN.addAction(self.menuTrain_model.menuAction())
         self.menuDNN.addAction(self.menuFine_Tune_model.menuAction())
         self.menuDNN.addAction(self.actionRetrack_from_current)
+        self.menuDNN.addAction(self.actionRetrack_from_first)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
@@ -627,6 +630,7 @@ class Ui_LabelWindow(object):
         self.actionLoad_weights.setText(_translate("LabelWindow", "Load weights"))
         self.actionTrack.setText(_translate("LabelWindow", "Track"))
         self.actionRetrack_from_current.setText(_translate("LabelWindow", "Retrack from current"))
+        self.actionRetrack_from_current.setToolTip(_translate("LabelWindow", "Retrack from current frame"))
         self.actionExport_data.setText(_translate("LabelWindow", "Export data"))
         self.actionExport_data.setWhatsThis(_translate("LabelWindow", "Export data of current field of view"))
         self.actionArea_threshold.setText(_translate("LabelWindow", "Area threshold"))
@@ -636,5 +640,7 @@ class Ui_LabelWindow(object):
         self.actionU_Net_segment.setText(_translate("LabelWindow", "U-Net"))
         self.actionUNet.setText(_translate("LabelWindow", "U-Net"))
         self.actionU_Net_2.setText(_translate("LabelWindow", "U-Net"))
+        self.actionRetrack_from_first.setText(_translate("LabelWindow", "Retrack from first"))
+        self.actionRetrack_from_first.setToolTip(_translate("LabelWindow", "Retrack from first frame with non-empty label"))
 from labelwidget import LabelWidget
 from viewslider import ViewSlider

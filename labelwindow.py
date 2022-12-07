@@ -20,7 +20,6 @@ from unetdialog import UNetDialog
 sys.path.append("./unet")
 
 
-
 class LabelWindow(QMainWindow, Ui_LabelWindow):
     def __init__(self):
         super(LabelWindow, self).__init__()
@@ -79,7 +78,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionShow_label_ID.triggered.connect(lambda: self.label_widget.show_label_id())
         self.actionHide_label_ID.triggered.connect(lambda: self.label_widget.hide_label_id())
         self.actionU_Net_segment.triggered.connect(self.segment_with_unet)
-        self.actionRetrack_from_current.triggered.connect(self.retrack)
+        self.actionRetrack_from_current.triggered.connect(self.retrack_from_current)
+        self.actionRetrack_from_first.triggered.connect(self.retrack_from_first)
 
         # ROI group
         self.fov_box.currentIndexChanged.connect(self.set_fov)
@@ -111,6 +111,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.paste_id_inplace.connect(self.paste)
         self.label_widget.delete_id_at_mouse_position.connect(self.delete_label_at_mouse)
         self.label_widget.select_id_at_mouse_position.connect(self.select_label_at_mouse)
+        self.label_widget.draw_at_mouse_position.connect(self.draw_at_mouse)
         self.pixmap_scale = 1
         self.brush_size = 50
 
@@ -170,7 +171,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             label = np.zeros(self.image_shape, dtype=np.uint8)
         self.label_widget.set_label(label)
         self.generate_label_table_from_label(label)
-        self.max_label_value = label.max()
+        self.max_label_value = np.amax(label)
         self.label_widget.show_label()
         if self.label_table.rowCount() > 1:
             self.label_table.selectRow(0)
@@ -180,27 +181,25 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         file = h5py.File(self.hdfpath, "r+")
         if frame < 1:
             return
+        # if there is a label at previous frame
         if f"frame_{frame - 1}" in file[f"/fov_{fov}"]:
-            # if there is a mask at previous frame
             prev = file[f"/fov_{fov}/frame_{frame - 1}"][:]
-            # if there is a mask at current frame
+            # if there is a label at current frame, do track
             if f"frame_{frame}" in file[f"/fov_{fov}"]:
                 curr = file[f"/fov_{fov}/frame_{frame}"][:]
                 out = hu.correspondence(prev, curr)
+            # if currently no label, return empty label
             else:
                 out = np.zeros_like(prev, dtype=np.uint8)
         else:
+            # if no label at previous frame, but has a label at current, return current label
             if f"frame_{frame}" in file[f"/fov_{fov}"]:
                 curr = file[f"/fov_{fov}/frame_{frame}"][:]
                 out = curr
+            # if no label at previous and current frame, return empty label
             else:
                 out = np.zeros(self.image_shape, dtype=np.uint8)
         save_label(self.hdfpath, fov, frame, out.astype(np.uint8))
-
-    def retrack(self):
-        """retrack all frames from start to end"""
-        for i in range(self.num_frames):
-            self.track(self.fov, i)
 
     def fill_label_holes(self):
         """fill holes smaller than 64 pixels in each label area"""
@@ -276,7 +275,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_image(image)
         self.update_label_display()
 
-    def get_label_from_hdf(self):
+    def get_label_from_hdf(self) -> np.ndarray:
+        """get the label for current frame and current fov
+        return None if label is not found in the hdf file"""
         # fov and time are stored as fov group and frame dataset as /fov_i/frame_j
         file = h5py.File(self.hdfpath, "r")
         if f"frame_{self.frame_index}" in file[f"/fov_{self.fov}"]:
@@ -344,7 +345,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             if not exist:
                 self.create_hdf()
             label = self.get_label_from_hdf()
-            self.max_label_value = label.max()
+            self.max_label_value = np.amax(label)
             # regenerate label table
             self.generate_label_table_from_label(label)
             # update view slider
@@ -378,6 +379,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                                           QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             if choice == QMessageBox.Yes:
                 self.save_current_label()
+                self.channel_box.clear()
+                self.fov_box.clear()
                 self.get_nd2_data()
                 return
             elif choice == QMessageBox.No:
@@ -389,34 +392,92 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.get_nd2_data()
             return
 
+    def retrack_from_first(self):
+        """retrack all frames from start to end
+        do current frame does not have a label, do nothing"""
+        # locate the first frame that has a label
+        file = h5py.File(self.hdfpath, "r")
+        start_frame = -1
+        for i in range(self.num_frames):
+            if f"frame_{i}" in file[f"/fov_{self.fov}"]:
+                start_frame = i
+                break
+        if start_frame == -1:
+            return
+        else:
+            label = file[f"/fov_{self.fov}/frame_{start_frame}"][:]
+            # rearrange all the labels starting by 1
+            new_lv = 1
+            label_copy = label.copy()
+            for lv in np.unique(label):
+                if lv == 0:
+                    continue
+                label[label_copy == lv] = new_lv
+                new_lv += 1
+        file.close()
+        # jump to the first frame with label and refresh label
+        self.jump_to_frame(start_frame)
+        self.label_widget.set_label(label)
+        self.generate_label_table_from_label(label)
+        # save the first frame that has a label, and start tracking
+        save_label(self.hdfpath, self.fov, start_frame, label.astype(np.uint8))
+        for i in range(start_frame, self.num_frames):
+            self.track(self.fov, i)
+
+    def retrack_from_current(self):
+        """retrack all frames from start to end
+        do current frame does not have a label, do nothing"""
+        # locate the first frame that has a label
+        for i in range(self.frame_index, self.num_frames):
+            self.track(self.fov, i)
+        label = self.get_label_from_hdf()
+        self.label_widget.set_label(label)
+        self.generate_label_table_from_label(label)
+
     def export_data(self):
+        """export label statistics of current fov
+        different fovs will be exported to different files"""
         label_list = []
-        file, _ = QFileDialog.getSaveFileName(self, "Save csv", ".\\", "csv file (*.csv")
+        file, _ = QFileDialog.getSaveFileName(self, "Save csv", ".\\", "csv file (*.csv)")
         if file:
             self.save_data_path = file
         else:
             self.save_data_path = get_default_path(self.nd2filepath, ".csv")
+
+        file = h5py.File(self.hdfpath, "r")
+
         for frame in range(self.num_frames):
-            label = self.get_label_from_hdf()
-            if label is None:
+            if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
+                label = file[f"/fov_{self.fov}/frame_{frame}"][:]
+            else:
+                label = None
+            if label is None or np.amax(label) == 0:
                 continue
-            regions = regionprops(label_image=label, intensity_image=self.images[frame])
+            regions = regionprops(label_image=label)
             for prop in regions:
+                x, y = prop.centroid
                 stats = {
                     "Label": prop.label,
+                    "Frame": frame,
                     "Time": self.time_steps[frame],
+                    "Area": prop.area,
+                    "Centroid X": x,
+                    "Centroid y": y,
+                    "Orientation": prop.orientation,
+                    "Length major": prop.axis_major_length,
+                    "Length minor": prop.axis_minor_length,
                 }
-                prop.coords
-            for value in np.unique(label):
-                if value == 0:
-                    continue
-                else:
-                    stats = {"Label": value,
-                             "Time": self.time_steps[frame],
-                             "Channel": self.channel,
-                             **label_statistics(self.images[frame], label),
-                             "Disappeared": not (value in self.selected_label)}
-                    label_list.append(stats)
+                for i, name in enumerate(self.images.metadata["channels"]):
+                    fl_img = self.images.get_frame_2D(c=i, t=frame, v=self.fov)
+                    ix = prop.coords[:, 0]
+                    iy = prop.coords[:, 1]
+                    fl_values = fl_img[ix, iy]
+                    stats[f"Mean intensity of {name}"] = fl_values.mean()
+                    stats[f"Total intensity of {name}"] = fl_values.sum()
+                    stats[f"Intensity variance of {name}"] = fl_values.var()
+                label_list.append(stats)
+
+        file.close()
         df = pd.DataFrame(label_list)
         df = df.sort_values(["Label", "Time"])
         df.to_csv(self.save_data_path, index=False)
@@ -449,12 +510,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         if self.images is None:
             return
         elif self.buttonPlay.text() == "Play":
-            self.buttonPlay.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaStop))
             self.buttonPlay.setText("Stop")
+            self.buttonPlay.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaStop))
             self.timer.start(200)
         else:
-            self.timer.stop()
+            self.buttonPlay.setText("Play")
             self.buttonPlay.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
+            self.timer.stop()
 
     def select_label_at_mouse(self, x, y):
         label = self.label_widget.render.label
@@ -468,6 +530,15 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_table.setStyleSheet(f"selection-background-color: {c}")
             self.label_table.selectRow(row)
             self.label_table.verticalScrollBar().setSliderPosition(row)
+
+    def draw_at_mouse(self, x, y):
+        label = self.label_widget.render.label
+        lv = label[x, y]
+        # if draw at empty, create a new label
+        if lv == 0:
+            self.add_new_label()
+        else:
+            self.label_widget.set_label_value(lv)
 
     def copy_label_at_mouse(self, x, y):
         label = self.label_widget.render.label
@@ -518,7 +589,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             label = self.get_label_from_hdf()
             if label is None:
                 label = np.zeros(self.image_shape, dtype=np.uint8)
-            self.max_label_value = label.max()
+            self.max_label_value = np.amax(label)
             self.label_widget.set_label(label)
             self.generate_label_table_from_label(label)
             self.label_widget.set_scale(self.pixmap_scale)

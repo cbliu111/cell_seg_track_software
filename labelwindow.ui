@@ -1039,6 +1039,7 @@ color:rgb(255, 255, 255)</string>
     <addaction name="menuTrain_model"/>
     <addaction name="menuFine_Tune_model"/>
     <addaction name="actionRetrack_from_current"/>
+    <addaction name="actionRetrack_from_first"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -1205,6 +1206,9 @@ color:rgb(255, 255, 255)</string>
    <property name="text">
     <string>Retrack from current</string>
    </property>
+   <property name="toolTip">
+    <string>Retrack from current frame</string>
+   </property>
   </action>
   <action name="actionExport_data">
    <property name="text">
@@ -1247,6 +1251,14 @@ color:rgb(255, 255, 255)</string>
   <action name="actionU_Net_2">
    <property name="text">
     <string>U-Net</string>
+   </property>
+  </action>
+  <action name="actionRetrack_from_first">
+   <property name="text">
+    <string>Retrack from first</string>
+   </property>
+   <property name="toolTip">
+    <string>Retrack from first frame with non-empty label</string>
    </property>
   </action>
  </widget>
