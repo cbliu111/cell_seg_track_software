@@ -8,11 +8,9 @@
       <change beforePath="$PROJECT_DIR$/.idea/Dynamics.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Dynamics.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imagerender.py" beforeDir="false" afterPath="$PROJECT_DIR$/imagerender.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/base.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/labelwidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwidget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/labelwindow.ui" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui_labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui_labelwindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,7 +50,7 @@
       <recent name="E:\pyqt_installation\Dynamics" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.labelwindow">
+  <component name="RunManager" selected="Python.label_widget">
     <configuration name="label_widget" type="PythonConfigurationType" factoryName="Python">
       <module name="Dynamics" />
       <option name="INTERPRETER_OPTIONS" value="" />

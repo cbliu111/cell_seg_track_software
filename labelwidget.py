@@ -2,10 +2,11 @@ import sys
 import numpy as np
 import skimage.exposure
 from PyQt5.QtCore import QObject, QTimer, Qt, QThreadPool, pyqtSignal as Signal, pyqtSlot as Slot, QPoint, QPointF
-from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QFont
+from PyQt5.QtWidgets import QWidget, QApplication, QMenu
+from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QFont, QCursor
 from imagerender import ImageRender
 from base import numpy_to_image, get_label_centers, DEFAULT_COLORS
+
 
 class LabelWidget(QWidget):
     read_next_frame = Signal()
@@ -48,6 +49,7 @@ class LabelWidget(QWidget):
         self.mouse_pos = QPointF()
         self.zoom_point = QPointF()
         self.zoom_factor = 5
+        self.scroll_factor = 30
         # plot brush trajectory on pixmap layer
         self.brush_traj = []
         # used to draw on label layer
@@ -72,6 +74,7 @@ class LabelWidget(QWidget):
             "polygon": self.polygon_brush,
             "line": self.line_brush,
         }
+
         """Keys:
                 D: draw mode
                 E: erase mode
@@ -109,6 +112,43 @@ class LabelWidget(QWidget):
         self.render.label = self.label
         self.threadpool = QThreadPool()
         self.threadpool.start(self.render)
+
+        # context menu
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+
+        self.pop_menu = QMenu(self)
+
+        scroll_menu = self.pop_menu.addMenu("Scroll")
+        scroll_left_action = scroll_menu.addAction("Left")
+        scroll_right_action = scroll_menu.addAction("Right")
+        scroll_up_action = scroll_menu.addAction("Up")
+        scroll_down_action = scroll_menu.addAction("Down")
+
+        scroll_left_action.triggered.connect(self.scroll_left)
+        scroll_right_action.triggered.connect(self.scroll_right)
+        scroll_up_action.triggered.connect(self.scroll_up)
+        scroll_down_action.triggered.connect(self.scroll_down)
+
+        zoom_in_action = self.pop_menu.addAction("Zoom in")
+        zoom_out_action = self.pop_menu.addAction("Zoom out")
+        draw_action = self.pop_menu.addAction("Draw")
+        erase_action = self.pop_menu.addAction("Erase")
+        copy_action = self.pop_menu.addAction("Copy")
+        paste_action = self.pop_menu.addAction("Paste")
+        delete_action = self.pop_menu.addAction("Delete")
+
+        zoom_in_action.triggered.connect(lambda: self.zoom_in())
+        zoom_out_action.triggered.connect(lambda: self.zoom_out())
+        draw_action.triggered.connect(self.draw)
+        erase_action.triggered.connect(self.erase)
+        copy_action.triggered.connect(self.copy_id)
+        paste_action.triggered.connect(self.paste_id)
+        delete_action.triggered.connect(self.delete_id)
+
+    def show_context_menu(self, event):
+        # pop menu
+        self.pop_menu.popup(QCursor.pos())
 
     def paintEvent(self, event):
 
@@ -160,8 +200,7 @@ class LabelWidget(QWidget):
 
     def get_brush_color(self):
         if self.draw_mode == "draw":
-            # c = COLORS[(self.label_value-1) % len(COLORS)]
-            c = DEFAULT_COLORS[(self.label_value-1) % len(DEFAULT_COLORS)]
+            c = DEFAULT_COLORS[(self.label_value - 1) % len(DEFAULT_COLORS)]
             return QColor(c)
         else:
             return QColor(255, 255, 255)
@@ -278,8 +317,8 @@ class LabelWidget(QWidget):
 
     def get_image_position_from_mouse(self):
         image_pos = self.map_from_screen(self.mouse_pos)
-        x = image_pos.x() if image_pos.x() < self.w else self.w
-        y = image_pos.y() if image_pos.y() < self.h else self.h
+        x = image_pos.x() if image_pos.x() < self.w else self.w - 1
+        y = image_pos.y() if image_pos.y() < self.h else self.h - 1
         return x, y
 
     def mouseMoveEvent(self, event):
@@ -317,27 +356,45 @@ class LabelWidget(QWidget):
         self.zoom_point = self.mouse_pos
         self.update()
 
+    def zoom_in(self):
+        self.scale = self.zoom_factor
+        self.render.set_scale(self.scale)
+        self.zoom_point = self.mouse_pos
+        self.update()
+
+    def zoom_out(self):
+        self.scale = 1
+        self.render.set_scale(self.scale)
+        self.zoom_point = self.mouse_pos
+        self.update()
+
     def scroll_left(self):
         x = self.zoom_point.x()
-        self.zoom_point.setX(x + 10)
+        self.zoom_point.setX(x + self.scroll_factor)
         self.update()
 
     def scroll_right(self):
         x = self.zoom_point.x()
-        self.zoom_point.setX(x - 10)
+        self.zoom_point.setX(x - self.scroll_factor)
         self.update()
 
     def scroll_up(self):
         y = self.zoom_point.y()
-        self.zoom_point.setY(y + 10)
+        self.zoom_point.setY(y + self.scroll_factor)
         self.update()
 
     def scroll_down(self):
         y = self.zoom_point.y()
-        self.zoom_point.setY(y - 10)
+        self.zoom_point.setY(y - self.scroll_factor)
         self.update()
 
-    def set_zoom_factor(self, zf):
+    def set_zoom_factor(self, zf=5):
+        """
+        set the current zoom folds
+        larger zoom folds will significantly slow down the image refresh speed
+        :param zf: zoom factor, default value is 5
+        :return: None
+        """
         self.scale = 1
         self.zoom_factor = zf
         self.update()
@@ -429,7 +486,6 @@ class LabelWidget(QWidget):
         self.update()
 
 
-
 if __name__ == "__main__":
     from skimage import io
 
@@ -449,7 +505,7 @@ if __name__ == "__main__":
     # D is draw, default label value is 1
     # E is erase
     win.set_brush_size(30)
-    win.set_zoom_factor(10)
+    win.set_zoom_factor(5)
     win.show_label()
     win.show_label_id()
     sys.exit(app.exec())

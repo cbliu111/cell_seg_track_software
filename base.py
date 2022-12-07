@@ -119,6 +119,3 @@ def get_default_path(nd2filepath, post: str):
         tmp += temp_list[k] + '/'
     hdf_name = temp_list[-1].split('.')[-2]
     return tmp + hdf_name + post
-
-def export(image: np.ndarray, label: np.ndarray):
-    pass
