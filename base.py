@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 from skimage.measure import regionprops
 import numpy as np
 import h5py
-from PyQt5.QtGui import qRgb, QColor, QImage, QPixmap, QPainter
+from PyQt5.QtGui import qRgb, QColor, QImage
 from PyQt5.QtWidgets import QPushButton
 
 DEFAULT_COLORS = ('red', 'blue', 'yellow', 'magenta', 'green',
@@ -119,3 +119,6 @@ def get_default_path(nd2filepath, post: str):
         tmp += temp_list[k] + '/'
     hdf_name = temp_list[-1].split('.')[-2]
     return tmp + hdf_name + post
+
+def export(image: np.ndarray, label: np.ndarray):
+    pass
