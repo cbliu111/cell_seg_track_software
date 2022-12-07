@@ -347,7 +347,8 @@ class LabelWidget(QWidget):
         self.update()
 
     def keyPressEvent(self, event):
-        self.key_route[event.key()]()
+        if event.key in self.key_route.keys():
+            self.key_route[event.key()]()
 
     @Slot(QPixmap)
     def update_label_pixmap(self, pixmap):
