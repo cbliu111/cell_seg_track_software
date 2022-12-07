@@ -9,13 +9,19 @@ from base import numpy_to_image, COLOR_TABLE
 
 
 class RenderSignals(QObject):
+    """
+    Signal finish of colored label pixmap rendering.
+    The pixmap is transfered through the signal.
+    """
     render_finished = Signal(QPixmap)
 
 
 class ImageRender(QRunnable):
     """
-    change label according to input brush parameters
-    and render a QPixmap for displaying
+    Change label according to input brush parameters,
+    and render a QPixmap for displaying in LabelWidget.
+    Only label is used for coloring, tried skimage label2rgb, not fast enough.
+    Line mask is not implemented and will be removed.
     """
 
     def __init__(self):

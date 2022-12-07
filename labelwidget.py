@@ -9,6 +9,25 @@ from base import numpy_to_image, get_label_centers, DEFAULT_COLORS
 
 
 class LabelWidget(QWidget):
+    """
+    The label window used for interacting with the images and labels.
+
+    Keys shortcuts:
+            D: draw mode
+            E: erase mode
+            Z: zoom out or store origin scale
+            Left: scroll image to west
+            right: scroll image to east
+            down: scroll image to south
+            up: scroll image to north
+            F: go to next frame
+            A: go back to previous frame
+            C: copy label at where the mouse hold
+            V: paste copied label for e.g. in other frame at the same location
+            X: delete label at where the mouse hold
+    
+    A pop menu is also implemented.
+    """
     read_next_frame = Signal()
     read_previous_frame = Signal()
     label_updated = Signal()
@@ -75,19 +94,6 @@ class LabelWidget(QWidget):
             "line": self.line_brush,
         }
 
-        """Keys:
-                D: draw mode
-                E: erase mode
-                Z: zoom out or store origin scale
-                Left: scroll image to west
-                right: scroll image to east
-                down: scroll image to south
-                up: scroll image to north
-                F: go to next frame
-                A: go back to previous frame
-                C: copy label at where the mouse hold
-                V: paste copied label for e.g. in other frame at the same location
-                X: delete label at where the mouse hold"""
         self.key_route = {
             Qt.Key_D: self.draw,
             Qt.Key_E: self.erase,
@@ -299,11 +305,13 @@ class LabelWidget(QWidget):
         self.select_id_at_mouse_position.emit(x, y)
 
     def map_from_screen(self, p: QPointF):
-        """return the image coordinate from the point on the screen"""
-        # the current screen has the same resolution with the scaled image
-        # thus scaling of the mouse position is not right
-        # image rows corresponding to height, and also to y
-        # image cols corresponding to width, and also to x
+        """
+        Return the image coordinate from the point on the screen.
+        The current screen has the same resolution with the scaled image.
+        Thus scaling of the mouse position is not right.
+        Image rows corresponding to height, and also to y.
+        Image cols corresponding to width, and also to x.
+        """
         x = (p.x() - self.offset.x()) / self.scaled_image.width() * self.image.shape[1]
         y = (p.y() - self.offset.y()) / self.scaled_image.height() * self.image.shape[0]
         img_pos_x = int(x)
@@ -311,17 +319,29 @@ class LabelWidget(QWidget):
         return QPoint(img_pos_y, img_pos_x)
 
     def map_to_screen(self, p: QPoint):
+        """
+        The reverse function of map_from_screen.
+        """
         x = p.x() / self.image.shape[1] * self.scaled_image.width() + self.offset.x()
         y = p.y() / self.image.shape[0] * self.scaled_image.height() + self.offset.y()
         return QPointF(x, y)
 
     def get_image_position_from_mouse(self):
+        """
+        Return coordinates in the label matrix based on current mouse position.
+        Automatically constrain the coordinates value when mouse moves out of the image boards.
+        """
         image_pos = self.map_from_screen(self.mouse_pos)
         x = image_pos.x() if image_pos.x() < self.w else self.w - 1
         y = image_pos.y() if image_pos.y() < self.h else self.h - 1
         return x, y
 
     def mouseMoveEvent(self, event):
+        """
+        Record mouse positions when left button is pressed.
+        Used for drawing the brush trajectory,
+         and indicating coordinate and label value at the mouse position.
+        """
         self.mouse_pos = event.pos()
         x, y = self.get_image_position_from_mouse()
         self.coordinate = f"xy[{x}, {y}], label[{self.label[x, y]}]"
@@ -332,12 +352,19 @@ class LabelWidget(QWidget):
         self.update()
 
     def mousePressEvent(self, event):
+        """
+        Then press mouse left button, start recording points.
+        """
         if event.button() == Qt.LeftButton:
             p = self.map_from_screen(event.pos())
             self.line.append(p)
             self.update()
 
     def mouseReleaseEvent(self, event):
+        """
+        If mouse is released, starting to draw on the label. 
+        Render will only be started when mouse is released.
+        """
         self.render.line = self.line
         self.render.label_value = self.label_value
         self.brush_traj = []

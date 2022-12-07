@@ -10,9 +10,9 @@ import unet.hungarian as hu
 from PyQt5.QtCore import QCoreApplication, QObject, QTimer, Qt, QThreadPool, pyqtSignal as Signal, pyqtSlot as Slot, \
     QPoint, QPointF, QDir
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QMenu, QHeaderView, QMessageBox, QStyle, \
-    QAbstractItemView, QFileDialog, QPushButton, QTableWidgetItem
+    QAbstractItemView, QFileDialog, QPushButton, QTableWidgetItem, QProgressBar
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QIcon, QPalette, QBrush
-from base import get_label_color, label_statistics, save_label, get_default_path
+from base import get_label_color, save_label, get_default_path
 from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
 from unetdialog import UNetDialog
@@ -21,6 +21,9 @@ sys.path.append("./unet")
 
 
 class LabelWindow(QMainWindow, Ui_LabelWindow):
+    """
+    The main label window for cell segmentation, tracking and data extracting.
+    """
     def __init__(self):
         super(LabelWindow, self).__init__()
         self.setupUi(self)
@@ -157,6 +160,11 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         self.show()
 
+        # progress bar
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setValue(0)
+        self.statusbar.addWidget(self.progress_bar)
+
     def segment_with_unet(self):
         unet_dialog = UNetDialog(frames=self.num_frames, fovs=self.num_fov)
         unet_dialog.set_channel(self.channel)
@@ -202,7 +210,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         save_label(self.hdfpath, fov, frame, out.astype(np.uint8))
 
     def fill_label_holes(self):
-        """fill holes smaller than 64 pixels in each label area"""
+        """
+        Fill holes smaller than 64 pixels in each label area.
+        """
         lb = self.label_widget.render.label
         for lv in np.unique(lb):
             if lv == 0:
@@ -216,7 +226,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.generate_label_table_from_label(lb)
 
     def remove_label_small_pieces(self):
-        """remove pieces smaller than 64"""
+        """
+        Remove pieces smaller than 64.
+        """
         lb = self.label_widget.render.label
         mask = lb != 0
         mask = skimage.morphology.remove_small_objects(mask, min_size=64)
@@ -226,6 +238,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.generate_label_table_from_label(lb)
 
     def threshold_label_area(self):
+        """
+        Remove label with size larger than 4096,
+        or smaller than 64.
+        """
         lb = self.label_widget.render.label
         for lv in np.unique(lb):
             if lv == 0:
@@ -276,8 +292,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.update_label_display()
 
     def get_label_from_hdf(self) -> np.ndarray:
-        """get the label for current frame and current fov
-        return None if label is not found in the hdf file"""
+        """
+        Get the label for current frame and current fov.
+        Return None if label is not found in the hdf file.
+        """
         # fov and time are stored as fov group and frame dataset as /fov_i/frame_j
         file = h5py.File(self.hdfpath, "r")
         if f"frame_{self.frame_index}" in file[f"/fov_{self.fov}"]:
@@ -288,6 +306,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         return label
 
     def create_hdf(self):
+        """
+        When an hdf is not exists,
+        create it at the hdfpath.
+        Generate all groups corresponding to fovs,
+        also generate the first label at frame = 0 for current fov.
+        """
         file = h5py.File(self.hdfpath, "a")
         for i in range(self.num_fov):
             file.create_group(f"/fov_{i}")
@@ -301,6 +325,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         save_label(self.hdfpath, self.fov, self.frame_index, lb)
 
     def load_other_hdf(self):
+        """
+        Load other hdf file instead of the default hdfpath.
+        """
         file, _ = QFileDialog.getOpenFileName(self, "Open hdf5", ".\\", "hdf5 file (*.h5)")
         if file:
             self.hdfpath = file
@@ -315,13 +342,15 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             return
 
     def get_nd2_data(self):
-        """get the file name of the nd2 file
-        read all the necessary metadata
-        create a hdf5 file if this is the first analysis
-        load label from hdf5 file if file exist
-        and update all related widgets
-        hdf5 file is assumed to have the same file name with the nd2 file
-        but with different postfix"""
+        """
+        Get the file name of the nd2 file.
+        Read all the necessary metadata.
+        Create a hdf5 file if this is the first analysis.
+        Load label from hdf5 file if file exist.
+        and update all related widgets.
+        hdf5 file is assumed to have the same file name with the nd2 file,
+        but with different postfix.
+        """
         file, _ = QFileDialog.getOpenFileName(self, "Open nd2", ".\\", "nd2 file (*.nd2)")
         if file:
             # read nd2 file
@@ -393,8 +422,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             return
 
     def retrack_from_first(self):
-        """retrack all frames from start to end
-        do current frame does not have a label, do nothing"""
+        """
+        Retrack all frames from first frame to end.
+        If current frame does not have a label, do nothing.
+        The first frame label is relabeled to remove missing cells caused by 
+        manual corrections.
+        """
         # locate the first frame that has a label
         file = h5py.File(self.hdfpath, "r")
         start_frame = -1
@@ -421,22 +454,30 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.generate_label_table_from_label(label)
         # save the first frame that has a label, and start tracking
         save_label(self.hdfpath, self.fov, start_frame, label.astype(np.uint8))
+        self.progress_bar.setRange(start_frame, self.num_frames)
         for i in range(start_frame, self.num_frames):
+            self.progress_bar.setValue(i)
             self.track(self.fov, i)
 
     def retrack_from_current(self):
-        """retrack all frames from start to end
-        do current frame does not have a label, do nothing"""
+        """
+        Retrack all frames from current to end.
+        If current frame does not have a label, do nothing
+        """
         # locate the first frame that has a label
+        self.progress_bar.setRange(self.frame_index, self.num_frames)
         for i in range(self.frame_index, self.num_frames):
+            self.progress_bar.setValue(i)
             self.track(self.fov, i)
         label = self.get_label_from_hdf()
         self.label_widget.set_label(label)
         self.generate_label_table_from_label(label)
 
     def export_data(self):
-        """export label statistics of current fov
-        different fovs will be exported to different files"""
+        """
+        Export label statistics of current fov.
+        Different fovs may be exported to different files.
+        """
         label_list = []
         file, _ = QFileDialog.getSaveFileName(self, "Save csv", ".\\", "csv file (*.csv)")
         if file:
@@ -446,7 +487,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         file = h5py.File(self.hdfpath, "r")
 
+        self.progress_bar.setRange(0, self.num_frames)
         for frame in range(self.num_frames):
+            self.progress_bar.setValue(frame)
             if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
                 label = file[f"/fov_{self.fov}/frame_{frame}"][:]
             else:
@@ -483,7 +526,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         df.to_csv(self.save_data_path, index=False)
 
     def export_movie(self):
-        # TODO: export overlay image as movie
+        # TODO: export overlay image as movie, use skimage gray2rgb
         pass
 
     def import_dir_data(self, data, start_time, time_interval):
@@ -532,6 +575,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_table.verticalScrollBar().setSliderPosition(row)
 
     def draw_at_mouse(self, x, y):
+        """
+        If label value at mouse is not 0, 
+        change to the value and color of the label value.
+        Otherwise a new label is generated."""
         label = self.label_widget.render.label
         lv = label[x, y]
         # if draw at empty, create a new label
@@ -546,6 +593,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.copied_label = np.where(label == lv, lv, 0)
 
     def delete_label_at_mouse(self, x, y):
+        """
+        Delete all pixels having the label value at mouse holding.
+        """
         label = self.label_widget.render.label
         lv = label[x, y]
         if lv == 0:
@@ -575,6 +625,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.jump_to_frame(self.frame_index - 1)
 
     def jump_to_frame(self, index: int):
+        """
+        Jump to frame, and update widgets accordingly. 
+        """
         if self.images is None:
             return
         elif 0 <= index < self.num_frames:
@@ -601,6 +654,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.viewSlider.setValue(index)
 
     def label_table_select(self):
+        """
+        Select label table and make sure the color of selected item is not 
+        covered by selection color.
+        """
         row = self.label_table.currentRow()
         self.label_table_index = self.label_table.currentRow()
         item = self.label_table.item(row, 0)
@@ -612,6 +669,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_table.update()
 
     def add_new_label(self):
+        """
+        New label is added to be maximum label value + 1.
+        For missing label can be corresponding to cell that flushed out.
+        """
         self.label_value = self.max_label_value + 1
         self.max_label_value = self.label_value
         self.label_widget.set_label_value(self.label_value)
@@ -628,6 +689,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_table.selectRow(rows)
 
     def generate_label_table_from_label(self, label):
+        """
+        Update label table completely from label.
+        Label table is just a representation of the label stored in h5 file.
+        """
         self.label_table.clearContents()
         self.label_table.setRowCount(0)
         for i, lv in enumerate(np.unique(label)):
@@ -674,6 +739,11 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.copied_label = self.label_widget.render.label
 
     def paste(self):
+        """
+        After paste, should update the maximum label value,
+        and also generate a new label table row if pasted label is 
+        not exists in current frame.
+        """
         label = self.label_widget.render.label
         mask = self.copied_label > 0
         label[mask] = self.copied_label[mask]
@@ -699,6 +769,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_table.selectRow(rows)
 
     def delete_label(self):
+        """
+        Delete label at the position mouse hanging.
+        """
         if self.label_table.rowCount() == 0:
             return
         cr = self.label_table.currentRow()

@@ -3,11 +3,15 @@ import numpy as np
 from skimage import io
 from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox, QAbstractItemView, QTableWidgetItem
 from PyQt5.QtCore import QDir, Qt, pyqtSignal as Signal
-from PyQt5.QtCore import QCollator
 from ui_importdialog import Ui_ImportDialog
 
 
 class ImportDialog(QDialog, Ui_ImportDialog):
+    """
+    Dialog for import images from a directory.
+    Use nd2 file loading whenever possible. 
+    Precise time step information and other metadata are contained in the nd2 file.
+    """
     data_loaded = Signal(list, list, float, float)  # images, colors, start_time, time_interval
 
     def __init__(self, parent=None):
