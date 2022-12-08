@@ -6,17 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="473e4a69-526f-491e-9e55-49d1a1881564" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/.ipynb_checkpoints/LaunchBatchPrediction-checkpoint.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/.ipynb_checkpoints/hungarian-checkpoint.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/.ipynb_checkpoints/model-checkpoint.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/.ipynb_checkpoints/neural_network-checkpoint.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/.ipynb_checkpoints/segment-checkpoint.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/hungarian.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/model.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/neural_network.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unet/segment.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unetdialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/unetdialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +47,7 @@
       <recent name="E:\pyqt_installation\Dynamics" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.labelwindow">
+  <component name="RunManager">
     <configuration name="label_widget" type="PythonConfigurationType" factoryName="Python">
       <module name="Dynamics" />
       <option name="INTERPRETER_OPTIONS" value="" />
