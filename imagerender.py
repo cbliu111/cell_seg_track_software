@@ -15,6 +15,7 @@ class RenderSignals(QObject):
     The pixmap is transfered through the signal.
     """
     render_finished = Signal(QPixmap)
+    send_brush_mask = Signal(np.ndarray)
 
 
 class ImageRender(QRunnable):
@@ -141,6 +142,8 @@ class ImageRender(QRunnable):
             self.brush_mask[self.brush_type]()
             # draw or erase value on the label matrix
             self.draw_route[self.draw_mode]()
+            # emit brush mask signal
+            self.signals.send_brush_mask.emit(self.mask)
             # find all label contours
             self.label_contour_lines.clear()
             for lv in np.unique(self.label):

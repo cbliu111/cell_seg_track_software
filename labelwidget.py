@@ -19,6 +19,18 @@ def draw_polygon(line: list, painter: QPainter) -> None:
     if len(line) > 0:
         painter.drawLine(line[-1], line[0])
 
+class LabelWidgetSignals(QObject):
+    read_next_frame = Signal()
+    read_previous_frame = Signal()
+    label_updated = Signal()
+    select_id_at_mouse_position = Signal(int, int)
+    copy_id_at_mouse_position = Signal(int, int)
+    paste_id_inplace = Signal()
+    delete_id_at_mouse_position = Signal(int, int)
+    draw_at_mouse_position = Signal(int, int)
+    send_zoom_point = Signal(QPointF)
+    send_penatrate_mask = Signal(np.ndarray)
+
 
 class LabelWidget(QWidget):
     """
@@ -40,15 +52,6 @@ class LabelWidget(QWidget):
     
     A pop menu is also implemented.
     """
-    read_next_frame = Signal()
-    read_previous_frame = Signal()
-    label_updated = Signal()
-    select_id_at_mouse_position = Signal(int, int)
-    copy_id_at_mouse_position = Signal(int, int)
-    paste_id_inplace = Signal()
-    delete_id_at_mouse_position = Signal(int, int)
-    draw_at_mouse_position = Signal(int, int)
-    send_zoom_point = Signal(QPointF)
 
     def __init__(self, parent=None, input_image=None, input_label=None):
         super(LabelWidget, self).__init__()
@@ -57,6 +60,9 @@ class LabelWidget(QWidget):
         self.setMouseTracking(True)
         self.setCursor(Qt.ArrowCursor)
         self.setFixedSize(600, 600)
+
+        # signals
+        self.signals = LabelWidgetSignals()
 
         if input_image is None:
             self.image = np.zeros((512, 512), dtype=np.uint16)
@@ -127,6 +133,7 @@ class LabelWidget(QWidget):
         # define render
         self.render = ImageRender()
         self.render.signals.render_finished.connect(self.update_label_pixmap)
+        self.render.signals.send_brush_mask.connect(self.send_penetrate_mask)
         self.render.set_image_shape(self.image.shape)
         self.render.set_brush_size(self.brush_size)
         self.render.set_scale(self.scale)
@@ -301,25 +308,25 @@ class LabelWidget(QWidget):
         self.scale = s
 
     def next_frame(self):
-        self.read_next_frame.emit()
+        self.signals.read_next_frame.emit()
 
     def previous_frame(self):
-        self.read_previous_frame.emit()
+        self.signals.read_previous_frame.emit()
 
     def copy_id(self):
         x, y = self.get_image_position_from_mouse()
-        self.copy_id_at_mouse_position.emit(x, y)
+        self.signals.copy_id_at_mouse_position.emit(x, y)
 
     def paste_id(self):
-        self.paste_id_inplace.emit()
+        self.signals.paste_id_inplace.emit()
 
     def delete_id(self):
         x, y = self.get_image_position_from_mouse()
-        self.delete_id_at_mouse_position.emit(x, y)
+        self.signals.delete_id_at_mouse_position.emit(x, y)
 
     def select_id(self):
         x, y = self.get_image_position_from_mouse()
-        self.select_id_at_mouse_position.emit(x, y)
+        self.signals.select_id_at_mouse_position.emit(x, y)
 
     def map_from_screen(self, p: QPointF):
         """
@@ -398,21 +405,21 @@ class LabelWidget(QWidget):
         self.scale = sf
         self.render.set_scale(sf)
         self.zoom_point = self.mouse_pos
-        self.send_zoom_point.emit(self.zoom_point)
+        self.signals.send_zoom_point.emit(self.zoom_point)
         self.update()
 
     def zoom_in(self):
         self.scale = self.zoom_factor
         self.render.set_scale(self.scale)
         self.zoom_point = self.mouse_pos
-        self.send_zoom_point.emit(self.zoom_point)
+        self.signals.send_zoom_point.emit(self.zoom_point)
         self.update()
 
     def zoom_out(self):
         self.scale = 1
         self.render.set_scale(self.scale)
         self.zoom_point = self.mouse_pos
-        self.send_zoom_point.emit(self.zoom_point)
+        self.signals.send_zoom_point.emit(self.zoom_point)
         self.update()
 
     def scroll_left(self):
@@ -454,7 +461,7 @@ class LabelWidget(QWidget):
         self.render.draw_mode = "draw"
         x, y = self.get_image_position_from_mouse()
         self.update()
-        self.draw_at_mouse_position.emit(x, y)
+        self.signals.draw_at_mouse_position.emit(x, y)
 
     def erase(self):
         self.draw_mode = "erase"
@@ -466,14 +473,18 @@ class LabelWidget(QWidget):
         if event.key() in self.key_route.keys():
             self.key_route[event.key()]()
 
+    @Slot(np.ndarray)
+    def send_penetrate_mask(self, mask: np.ndarray):
+        self.signals.send_penatrate_mask.emit(mask)
+
     @Slot(QPixmap)
-    def update_label_pixmap(self, pixmap):
+    def update_label_pixmap(self, pixmap: QPixmap):
         self.label_contour_lines = self.render.label_contour_lines
         lb = self.render.label
         self.id_values, self.id_x_cs, self.id_y_cs = get_label_centers(lb)
         self.pix_label = pixmap
         self.update()
-        self.label_updated.emit()
+        self.signals.label_updated.emit()
 
     def set_label_value(self, lv):
         self.label_value = lv

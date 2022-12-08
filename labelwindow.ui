@@ -1070,6 +1070,8 @@ color:rgb(255, 255, 255)</string>
     <addaction name="actionArea_threshold"/>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
+    <addaction name="actionTurn_on_penetrate_mode"/>
+    <addaction name="actionTurn_off_penetrate_mode"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -1334,6 +1336,19 @@ color:rgb(255, 255, 255)</string>
    </property>
    <property name="toolTip">
     <string>Retrack from first frame with non-empty label</string>
+   </property>
+  </action>
+  <action name="actionTurn_on_penetrate_mode">
+   <property name="text">
+    <string>Turn on penetrate mode</string>
+   </property>
+   <property name="toolTip">
+    <string>All operations on this label also apply to all labels after</string>
+   </property>
+  </action>
+  <action name="actionTurn_off_penetrate_mode">
+   <property name="text">
+    <string>Turn off penetrate mode</string>
    </property>
   </action>
  </widget>

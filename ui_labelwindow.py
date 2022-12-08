@@ -535,6 +535,10 @@ class Ui_LabelWindow(object):
         self.actionU_Net_2.setObjectName("actionU_Net_2")
         self.actionRetrack_from_first = QtWidgets.QAction(LabelWindow)
         self.actionRetrack_from_first.setObjectName("actionRetrack_from_first")
+        self.actionTurn_on_penetrate_mode = QtWidgets.QAction(LabelWindow)
+        self.actionTurn_on_penetrate_mode.setObjectName("actionTurn_on_penetrate_mode")
+        self.actionTurn_off_penetrate_mode = QtWidgets.QAction(LabelWindow)
+        self.actionTurn_off_penetrate_mode.setObjectName("actionTurn_off_penetrate_mode")
         self.menuFile.addAction(self.actionOpen_nd2)
         self.menuFile.addAction(self.actionOpen_dir)
         self.menuFile.addAction(self.actionLoad_hdf5)
@@ -548,6 +552,8 @@ class Ui_LabelWindow(object):
         self.menuEdit.addAction(self.actionArea_threshold)
         self.menuEdit.addAction(self.actionUndo)
         self.menuEdit.addAction(self.actionRedo)
+        self.menuEdit.addAction(self.actionTurn_on_penetrate_mode)
+        self.menuEdit.addAction(self.actionTurn_off_penetrate_mode)
         self.menuView.addAction(self.actionShow_channel_overlay)
         self.menuView.addAction(self.actionHide_label)
         self.menuView.addAction(self.actionShow_label)
@@ -669,6 +675,9 @@ class Ui_LabelWindow(object):
         self.actionU_Net_2.setText(_translate("LabelWindow", "U-Net"))
         self.actionRetrack_from_first.setText(_translate("LabelWindow", "Retrack from first"))
         self.actionRetrack_from_first.setToolTip(_translate("LabelWindow", "Retrack from first frame with non-empty label"))
+        self.actionTurn_on_penetrate_mode.setText(_translate("LabelWindow", "Turn on penetrate mode"))
+        self.actionTurn_on_penetrate_mode.setToolTip(_translate("LabelWindow", "All operations on this label also apply to all labels after"))
+        self.actionTurn_off_penetrate_mode.setText(_translate("LabelWindow", "Turn off penetrate mode"))
 from labelwidget import LabelWidget
 from viewslider import ViewSlider
 from viewwidget import ViewWidget

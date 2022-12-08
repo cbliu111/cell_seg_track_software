@@ -60,6 +60,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_value = 0
         self.label_table_index = 0
         self.nd2_time_steps = None
+        # penetrate mode
+        self.penetrate = False
+        self.draw_mode = "draw"
 
         # menu
         self.actionOpen_nd2.triggered.connect(self.load_nd2)
@@ -83,6 +86,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionU_Net_segment.triggered.connect(self.segment_with_unet)
         self.actionRetrack_from_current.triggered.connect(self.retrack_from_current)
         self.actionRetrack_from_first.triggered.connect(self.retrack_from_first)
+        self.actionTurn_on_penetrate_mode.triggered.connect(self.turn_on_penetrate_mode)
+        self.actionTurn_off_penetrate_mode.triggered.connect(self.turn_off_penetrate_mode)
 
         # ROI group
         self.fov_box.currentIndexChanged.connect(self.set_fov)
@@ -93,8 +98,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.tool_box.currentTextChanged.connect(lambda t: self.label_widget.set_brush_type(t))
         self.brush_size_box.setValue(50)
         self.brush_size_box.valueChanged.connect(self.set_brush_size)
-        self.draw_button.clicked.connect(lambda: self.label_widget.set_draw())
-        self.erase_button.clicked.connect(lambda: self.label_widget.set_erase())
+        self.draw_button.clicked.connect(self.set_draw)
+        self.erase_button.clicked.connect(self.set_erase)
 
         # change id group
         self.change_id_button.clicked.connect(self.change_label_id)
@@ -106,16 +111,17 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.paste_button.clicked.connect(self.paste)
 
         # label widget
-        self.label_widget.read_next_frame.connect(self.jump_to_next_frame)
-        self.label_widget.read_previous_frame.connect(self.jump_to_previous_frame)
-        self.label_widget.label_updated.connect(lambda:
+        self.label_widget.signals.read_next_frame.connect(self.jump_to_next_frame)
+        self.label_widget.signals.read_previous_frame.connect(self.jump_to_previous_frame)
+        self.label_widget.signals.label_updated.connect(lambda:
                                                 self.generate_label_table_from_label(self.label_widget.render.label))
-        self.label_widget.copy_id_at_mouse_position.connect(self.copy_label_at_mouse)
-        self.label_widget.paste_id_inplace.connect(self.paste)
-        self.label_widget.delete_id_at_mouse_position.connect(self.delete_label_at_mouse)
-        self.label_widget.select_id_at_mouse_position.connect(self.select_label_at_mouse)
-        self.label_widget.draw_at_mouse_position.connect(self.draw_at_mouse)
-        self.label_widget.send_zoom_point.connect(self.zoom_view_widget)
+        self.label_widget.signals.copy_id_at_mouse_position.connect(self.copy_label_at_mouse)
+        self.label_widget.signals.paste_id_inplace.connect(self.paste)
+        self.label_widget.signals.delete_id_at_mouse_position.connect(self.delete_label_at_mouse)
+        self.label_widget.signals.select_id_at_mouse_position.connect(self.select_label_at_mouse)
+        self.label_widget.signals.draw_at_mouse_position.connect(self.draw_at_mouse)
+        self.label_widget.signals.send_zoom_point.connect(self.zoom_view_widget)
+        self.label_widget.signals.send_penatrate_mask.connect(self.draw_on_all_labels)
         self.pixmap_scale = 1
         self.brush_size = 50
 
@@ -321,6 +327,16 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.channel = c
         self.update_default_coords()
 
+    def set_draw(self):
+        self.draw_mode = "draw"
+        self.label_widget.set_draw()
+        self.label_value = self.label_widget.label_value
+
+    def set_erase(self):
+        self.draw_mode = "erase"
+        self.label_widget.set_erase()
+        self.label_value = self.label_widget.label_value
+
     def set_brush_size(self, value):
         self.brush_size = value
         self.label_widget.set_brush_size(value)
@@ -465,6 +481,24 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         else:
             self.get_nd2_data()
             return
+
+    def draw_on_all_labels(self, mask: np.ndarray):
+        if self.penetrate:
+            for frame in range(self.frame_index, self.num_frames):
+                label = get_label_from_hdf(self.hdfpath, self.fov, frame)[:]
+                self.draw_mode = self.label_widget.draw_mode
+                self.label_value = self.label_widget.label_value
+                if self.draw_mode == "draw":
+                    label[mask] = self.label_value
+                else:
+                    label[mask] = 0
+                save_label(self.hdfpath, self.fov, frame, label.astype(np.uint16))
+
+    def turn_on_penetrate_mode(self):
+        self.penetrate = True
+
+    def turn_off_penetrate_mode(self):
+        self.penetrate = False
 
     def retrack_from_first(self):
         """
@@ -639,7 +673,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         If label value at mouse is not 0, 
         change to the value and color of the label value.
-        Otherwise a new label is generated."""
+        Otherwise a new label is generated.
+        """
         label = self.label_widget.render.label
         lv = label[x, y]
         # if draw at empty, create a new label
@@ -647,6 +682,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.add_new_label()
         else:
             self.label_widget.set_label_value(lv)
+        self.draw_mode = "draw"
+        self.label_value = lv
 
     def copy_label_at_mouse(self, x, y):
         label = self.label_widget.render.label
