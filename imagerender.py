@@ -33,7 +33,7 @@ class ImageRender(QRunnable):
         self.label_value = 0
         self.scale = 1
         self.radius = np.ceil(self.brush_size / 2 / self.scale)
-        self.label = np.zeros((self.w, self.h), dtype=np.uint8)
+        self.label = np.zeros((self.w, self.h), dtype=np.uint16)
         self.mask = np.zeros((self.w, self.h), dtype=bool)
         self.xx, self.yy = np.meshgrid(np.arange(self.w), np.arange(self.h))
         self.line = []
@@ -157,7 +157,7 @@ class ImageRender(QRunnable):
                         contour_line.append(p)
                     self.label_contour_lines.append(contour_line)
             # convert label to image
-            q_image = numpy_to_image(self.label, QImage.Format_Indexed8)
+            q_image = numpy_to_image(self.label.astype(np.uint8), QImage.Format_Indexed8)
             q_image.setColorTable(COLOR_TABLE)
             q_image = q_image.convertToFormat(QImage.Format_RGB888)
             q_mask = numpy_to_image(self.label, QImage.Format_Indexed8)
@@ -181,7 +181,7 @@ if __name__ == "__main__":
             self.setWindowTitle("Draw")
 
             self.image = io.imread("cell.tif")
-            self.label = np.zeros(self.image.shape, dtype=np.uint8)
+            self.label = np.zeros(self.image.shape, dtype=np.uint16)
             self.label[0:200, 0:100] = 1
             self.label[100:150, 100:200] = 2
             self.label[200:250, 200:300] = 3
@@ -196,7 +196,7 @@ if __name__ == "__main__":
             self.zoom_point = QPointF()
 
             q_image = numpy_to_image(self.image, QImage.Format_Grayscale16)
-            q_label = numpy_to_image(self.image, QImage.Format_Indexed8)
+            q_label = numpy_to_image(self.image, QImage.Format_Grayscale16)
             self.pix_image = QPixmap(q_image)
             self.pix_label = QPixmap(q_label)
             self.scaled_image = None

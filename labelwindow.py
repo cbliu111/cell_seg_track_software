@@ -160,6 +160,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         self.show()
 
+        # track
+        self.new_cell_id_for_track = 0
+
         # progress bar
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setValue(0)
@@ -176,7 +179,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
     def update_label_display(self):
         label = self.get_label_from_hdf()
         if label is None:
-            label = np.zeros(self.image_shape, dtype=np.uint8)
+            label = np.zeros(self.image_shape, dtype=np.uint16)
         self.label_widget.set_label(label)
         self.generate_label_table_from_label(label)
         self.max_label_value = np.amax(label)
@@ -195,10 +198,14 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             # if there is a label at current frame, do track
             if f"frame_{frame}" in file[f"/fov_{fov}"]:
                 curr = file[f"/fov_{fov}/frame_{frame}"][:]
-                out = hu.correspondence(prev, curr)
+                out = hu.correspondence(prev, curr, self.new_cell_id_for_track)
+                # New cells should be given the unique identifier starting at the maximum label
+                # value of all historical frames.
+                if np.amax(out) >= self.new_cell_id_for_track:
+                    self.new_cell_id_for_track = np.amax(out) + 1
             # if currently no label, return empty label
             else:
-                out = np.zeros_like(prev, dtype=np.uint8)
+                out = np.zeros_like(prev, dtype=np.uint16)
         else:
             # if no label at previous frame, but has a label at current, return current label
             if f"frame_{frame}" in file[f"/fov_{fov}"]:
@@ -206,8 +213,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 out = curr
             # if no label at previous and current frame, return empty label
             else:
-                out = np.zeros(self.image_shape, dtype=np.uint8)
-        save_label(self.hdfpath, fov, frame, out.astype(np.uint8))
+                out = np.zeros(self.image_shape, dtype=np.uint16)
+        save_label(self.hdfpath, fov, frame, out.astype(np.uint16))
 
     def fill_label_holes(self):
         """
@@ -259,7 +266,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                         label[mask] = 0
             if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
                 dataset = file[f"/fov_{self.fov}/frame_{frame}"]
-                dataset[:] = label.astype(np.uint8)
+                dataset[:] = label.astype(np.uint16)
             else:
                 file.create_dataset(f"/fov_{self.fov}/frame_{frame}", data=label, compression="gzip")
         file.close()
@@ -333,7 +340,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         for i in range(self.num_fov):
             file.create_group(f"/fov_{i}")
         # create the first dataset
-        d = np.zeros(self.image_shape, dtype=np.uint8)
+        d = np.zeros(self.image_shape, dtype=np.uint16)
         file.create_dataset(f"/fov_0/frame_0", data=d, compression="gzip")
         file.close()
 
@@ -467,16 +474,19 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 label[label_copy == lv] = new_lv
                 new_lv += 1
         file.close()
+        self.new_cell_id_for_track = np.amax(label) + 1
         # jump to the first frame with label and refresh label
         self.jump_to_frame(start_frame)
         self.label_widget.set_label(label)
         self.generate_label_table_from_label(label)
         # save the first frame that has a label, and start tracking
-        save_label(self.hdfpath, self.fov, start_frame, label.astype(np.uint8))
+        save_label(self.hdfpath, self.fov, start_frame, label.astype(np.uint16))
         self.progress_bar.setRange(start_frame, self.num_frames)
+        self.progress_bar.show()
         for i in range(start_frame, self.num_frames):
             self.progress_bar.setValue(i)
             self.track(self.fov, i)
+        self.progress_bar.hide()
 
     def retrack_from_current(self):
         """
@@ -485,12 +495,16 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         # locate the first frame that has a label
         self.progress_bar.setRange(self.frame_index, self.num_frames)
+        self.progress_bar.show()
+        label = self.label_widget.render.label
+        self.new_cell_id_for_track = np.amax(label) + 1
         for i in range(self.frame_index, self.num_frames):
             self.progress_bar.setValue(i)
             self.track(self.fov, i)
         label = self.get_label_from_hdf()
         self.label_widget.set_label(label)
         self.generate_label_table_from_label(label)
+        self.progress_bar.hide()
 
     def export_data(self):
         """
@@ -660,7 +674,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_widget.set_image(self.images[index])
             label = self.get_label_from_hdf()
             if label is None:
-                label = np.zeros(self.image_shape, dtype=np.uint8)
+                label = np.zeros(self.image_shape, dtype=np.uint16)
             self.max_label_value = np.amax(label)
             self.label_widget.set_label(label)
             self.generate_label_table_from_label(label)

@@ -113,7 +113,7 @@ class UNetDialog(QDialog, Ui_Dialog):
             for frame in self.frame_list:
                 image = self.images[frame]
                 seg_img = self.predict_threshold_segment(image)
-                save_label(self.hdfpath, fov, frame, seg_img.astype(np.uint8))
+                save_label(self.hdfpath, fov, frame, seg_img.astype(np.uint16))
                 self.track(fov, frame)
                 progress += 1
                 self.progressBar.setValue(progress)
@@ -140,7 +140,7 @@ class UNetDialog(QDialog, Ui_Dialog):
 
         # segment
         seg = segment(th_mask, pred, self.seed_distance)
-        return seg.astype(np.uint8)
+        return seg.astype(np.uint16)
 
     def track(self, fov, frame):
         file = h5py.File(self.hdfpath, "r+")
@@ -161,7 +161,7 @@ class UNetDialog(QDialog, Ui_Dialog):
                 out = curr
             else:
                 out = np.zeros((self.rows, self.cols))
-        save_label(self.hdfpath, fov, frame, out.astype(np.uint8))
+        save_label(self.hdfpath, fov, frame, out.astype(np.uint16))
 
     def close_window(self):
         self.finished.emit()

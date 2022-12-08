@@ -3,29 +3,29 @@ import pandas as pd
 from munkres import Munkres
 from sklearn.preprocessing import scale
 from sklearn.metrics.pairwise import euclidean_distances
+from skimage import measure, morphology
 
-
-def correspondence(prev, curr):
+def correspondence(prev, curr, new_cell_id):
     """
     Corrects correspondence between previous and current mask, returns current
-    mask with corrected cell values. New cells are given the unique identifier
-    starting at max(prev)+1. 
-    
+    mask with corrected cell values.
+    New cells should be given the unique identifier starting at the maximum label
+    value of all historical frames.
+
     This is done by embedding every cell into a feature space consisting of
     the center of mass and the area. The pairwise euclidean distance is 
     calculated between the cells of the previous and current frame. This is 
     then used as a cost for the bipartite matching problem which is in turn
     solved by the Hungarian algorithm as implemented in the munkres package.
     """
-    newcell = np.max(prev) + 1
 
     hu_dict = hungarian_align(prev, curr)
     new = curr.copy()
     for key, val in hu_dict.items():
         # If new cell
         if val == -1:
-            val = newcell
-            newcell += 1
+            val = new_cell_id
+            new_cell_id += 1
 
         new[curr == key] = val
 
@@ -75,6 +75,40 @@ def cell_to_features(im, c, nsamples=None, time=None):
             'com_x': com[0],
             'com_y': com[1]}
 
+def get_features(im, t):
+    """
+    Embed label into feature space.
+    Small objects (< 50 pixels) and small holes (< 50 pixels) are also filled.
+    """
+    features = []
+    cells = []
+    for lv in np.unique(im):
+        if lv == 0:
+            continue
+        mask = im == lv
+        mask = morphology.remove_small_objects(mask, 50)
+        mask = morphology.remove_small_holes(mask, 50)
+        lb = np.zeros_like(im)
+        lb[mask] = im[mask]
+        props = measure.regionprops(lb)
+        for prop in props:
+            x, y = prop.centroid
+            prop_dict = {
+                "cell": prop.label,
+                "time": t,
+                "sqrt_area": np.sqrt(prop.area),
+                "area": prop.area,
+                "com_x": x,
+                "com_y": y,
+                "orientation": prop.orientation,
+                "axis_major_l": prop.axis_major_length,
+                "axis_minor_l": prop.axis_minor_length,
+            }
+            cells.append(prop.label)
+            features.append(prop_dict)
+    return pd.DataFrame(features), dict(enumerate(cells))
+
+
 
 def cell_distance(m1, m2, weight_com=3):
     """
@@ -84,15 +118,15 @@ def cell_distance(m1, m2, weight_com=3):
     make it more important).
     """
     # Modify to compute use more computed features
-    # cols = ['com_x', 'com_y', 'roundness', 'sqrtarea']
-    cols = ['com_x', 'com_y', 'area']
+    # cols = ['com_x', 'com_y', 'roundness', 'sqrt_area', 'area']
+    cols = ['com_x', 'com_y', 'area', 'orientation', 'sqrt_area', 'axis_major_l', 'axis_minor_l']
 
-    def get_features(m, t):
-        cells = list(np.unique(m))
-        if 0 in cells:
-            cells.remove(0)
-        features = [cell_to_features(m, c, time=t) for c in cells]
-        return pd.DataFrame(features), dict(enumerate(cells))
+    # def get_features(m, t):
+    #     cells = list(np.unique(m))
+    #     if 0 in cells:
+    #         cells.remove(0)
+    #     features = [cell_to_features(m, c, time=t) for c in cells]
+    #     return pd.DataFrame(features), dict(enumerate(cells))
 
     # Create df, rescale
     feat1, ix_to_cell1 = get_features(m1, 1)

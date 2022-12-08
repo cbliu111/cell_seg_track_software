@@ -5,12 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="473e4a69-526f-491e-9e55-49d1a1881564" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Dynamics.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Dynamics.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/base.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/imagerender.py" beforeDir="false" afterPath="$PROJECT_DIR$/imagerender.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/labelwidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwidget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unetdialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/unetdialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yeaz/hungarian.py" beforeDir="false" afterPath="$PROJECT_DIR$/yeaz/hungarian.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

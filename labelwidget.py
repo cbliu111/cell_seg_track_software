@@ -62,11 +62,11 @@ class LabelWidget(QWidget):
         else:
             self.image = input_image
         if input_label is None:
-            self.label = np.zeros_like(self.image, dtype=np.uint8)
+            self.label = np.zeros_like(self.image, dtype=np.uint16)
         else:
             self.label = input_label
         q_image = numpy_to_image(self.image, QImage.Format_Grayscale16)
-        q_label = numpy_to_image(self.label, QImage.Format_Indexed8)
+        q_label = numpy_to_image(self.label.astype(np.uint8), QImage.Format_Indexed8)
         self.pix_image = QPixmap(q_image)
         self.pix_label = QPixmap(q_label)
 
@@ -219,8 +219,8 @@ class LabelWidget(QWidget):
 
         # draw brush trajectory
         if self._show_label:
-            painter.setOpacity(0.2)
-            painter.setPen(Qt.green)
+            painter.setOpacity(0.3)
+            painter.setPen(Qt.NoPen)
             self.brush_route[self.brush_type](painter)
 
         painter.end()
@@ -536,7 +536,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     image = io.imread("cell.tif")
-    label = np.zeros(image.shape, dtype=np.uint8)
+    label = np.zeros(image.shape, dtype=np.uint16)
     label[1:200, 1:100] = 1
     label[100:150, 100:200] = 2
     label[200:250, 200:300] = 3

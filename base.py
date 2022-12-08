@@ -18,14 +18,15 @@ def get_label_color(lv):
     return DEFAULT_COLORS[(lv - 1) % len(DEFAULT_COLORS)]
 
 
-COLOR_TABLE = [qRgb(0, 0, 0)] + [QColor(i).rgb() for i in DEFAULT_COLORS] * 20
+COLOR_TABLE = [QColor(i).rgb() for i in DEFAULT_COLORS] * 30
+COLOR_TABLE = [qRgb(0, 0, 0)] + COLOR_TABLE
 
 
 def numpy_to_image(m: np.ndarray, fmt: QImage.Format):
     """
-    Convert an np.ndarray to QImage with QImage format fmt.
+    Convert a np.ndarray to QImage with QImage format fmt.
     QImage is returned.
-    If m dtype is np.uint8 for label, fmt is QImage.Format_Indexed8.
+    If m dtype is np.uint16 for label, but fmt is QImage.Format_Grayscale8.
     If m dtype is np.uint16 for 16-bit image, fmt is QImage.Format_Grayscale16.
     """
     return QImage(m.data, m.shape[0], m.shape[1], m.strides[0], fmt)
@@ -58,9 +59,9 @@ def save_label(hdfpath, fov, frame, label):
     file = h5py.File(hdfpath, "r+")
     if f"frame_{frame}" in file[f"/fov_{fov}"]:
         dataset = file[f"/fov_{fov}/frame_{frame}"]
-        dataset[:] = label.astype(np.uint8)
+        dataset[:] = label.astype(np.uint16)
     else:
-        file.create_dataset(f"/fov_{fov}/frame_{frame}", data=label.astype(np.uint8), compression="gzip")
+        file.create_dataset(f"/fov_{fov}/frame_{frame}", data=label.astype(np.uint16), compression="gzip")
     file.close()
 
 
