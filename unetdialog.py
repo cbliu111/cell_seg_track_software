@@ -6,9 +6,9 @@ from PyQt5.QtCore import pyqtSignal as Signal
 from ui_unet import Ui_Dialog
 import skimage.exposure
 from base import save_label, get_default_path
-from unet.segment import segment
-import unet.neural_network as nn
-import unet.hungarian as hu
+from yeaz.segment import segment
+import yeaz.neural_network as nn
+import yeaz.hungarian as hu
 
 
 class UNetDialog(QDialog, Ui_Dialog):

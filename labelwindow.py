@@ -6,7 +6,7 @@ import skimage.morphology
 from skimage.measure import regionprops
 import h5py
 from nd2reader import ND2Reader
-import unet.hungarian as hu
+from yeaz import hungarian as hu
 from PyQt5.QtCore import QCoreApplication, QObject, QTimer, Qt, QThreadPool, pyqtSignal as Signal, pyqtSlot as Slot, \
     QPoint, QPointF, QDir
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QMenu, QHeaderView, QMessageBox, QStyle, \

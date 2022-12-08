@@ -6,7 +6,7 @@ Created on Sat Dec 21 18:54:10 2019
 """
 import os
 import sys
-from unet.model import unet
+from .model import unet
 import numpy as np
 import skimage
 from skimage import io
