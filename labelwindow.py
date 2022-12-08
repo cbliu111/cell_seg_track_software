@@ -76,10 +76,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionUndo.triggered.connect(self.undo)
         self.actionRedo.triggered.connect(self.redo)
         self.actionShow_channel_overlay.triggered.connect(self.show_overlay)
-        self.actionHide_label.triggered.connect(lambda: self.label_widget.hide_label())
-        self.actionShow_label.triggered.connect(lambda: self.label_widget.show_label())
-        self.actionShow_label_ID.triggered.connect(lambda: self.label_widget.show_label_id())
-        self.actionHide_label_ID.triggered.connect(lambda: self.label_widget.hide_label_id())
+        self.actionHide_label.triggered.connect(self.hide_all_label)
+        self.actionShow_label.triggered.connect(self.show_all_label)
+        self.actionShow_label_ID.triggered.connect(self.show_all_label_id)
+        self.actionHide_label_ID.triggered.connect(self.hide_all_label_id)
         self.actionU_Net_segment.triggered.connect(self.segment_with_unet)
         self.actionRetrack_from_current.triggered.connect(self.retrack_from_current)
         self.actionRetrack_from_first.triggered.connect(self.retrack_from_first)
@@ -289,6 +289,26 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # TODO:
         pass
 
+    def hide_all_label(self):
+        self.label_widget.hide_label()
+        self.view_widget_left.hide_label()
+        self.view_widget_right.hide_label()
+
+    def show_all_label(self):
+        self.label_widget.show_label()
+        self.view_widget_left.show_label()
+        self.view_widget_right.show_label()
+
+    def show_all_label_id(self):
+        self.label_widget.show_label_id()
+        self.view_widget_left.show_label_id()
+        self.view_widget_right.show_label_id()
+
+    def hide_all_label_id(self):
+        self.label_widget.hide_label_id()
+        self.view_widget_left.hide_label_id()
+        self.view_widget_right.hide_label_id()
+
     def set_fov(self, f):
         self.fov = f
         self.update_default_coords()
@@ -316,6 +336,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         image = self.images[self.frame_index]
         self.label_widget.set_image(image)
         self.set_view_images()
+        label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
+        self.label_widget.set_label(label)
+        self.set_view_labels()
         self.update_label_display()
 
     def create_hdf(self):
@@ -741,6 +764,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         New label is added to be maximum label value + 1.
         For missing label can be corresponding to cell that flushed out.
         """
+        label = self.label_widget.label
+        self.max_label_value = np.amax(label)
         self.label_value = self.max_label_value + 1
         self.max_label_value = self.label_value
         self.label_widget.set_label_value(self.label_value)

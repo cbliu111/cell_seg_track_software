@@ -34,7 +34,7 @@ class ImageViewRender(QRunnable):
     @Slot()
     def run(self):
         if self._show_label:
-            q_image = numpy_to_image(self.label, QImage.Format_Indexed8)
+            q_image = numpy_to_image(self.label.astype(np.uint8), QImage.Format_Indexed8)
             q_image.setColorTable(COLOR_TABLE)
             q_image = q_image.convertToFormat(QImage.Format_RGB888)
             q_mask = numpy_to_image(self.label, QImage.Format_Indexed8)

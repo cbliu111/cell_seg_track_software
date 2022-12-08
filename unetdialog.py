@@ -113,8 +113,7 @@ class UNetDialog(QDialog, Ui_Dialog):
             for frame in self.frame_list:
                 image = self.images[frame]
                 seg_img = self.predict_threshold_segment(image)
-                save_label(self.hdfpath, fov, frame, seg_img.astype(np.uint16))
-                self.track(fov, frame)
+                save_label(self.hdfpath, fov, frame, seg_img)
                 progress += 1
                 self.progressBar.setValue(progress)
 
@@ -141,27 +140,6 @@ class UNetDialog(QDialog, Ui_Dialog):
         # segment
         seg = segment(th_mask, pred, self.seed_distance)
         return seg.astype(np.uint16)
-
-    def track(self, fov, frame):
-        file = h5py.File(self.hdfpath, "r+")
-        if frame < 1:
-            return
-        if f"frame_{frame - 1}" in file[f"/fov_{fov}"]:
-            # if there is a mask at previous frame
-            prev = file[f"/fov_{fov}/frame_{frame - 1}"][:]
-            # if there is a mask at current frame
-            if f"frame_{frame}" in file[f"/fov_{fov}"]:
-                curr = file[f"/fov_{fov}/frame_{frame}"][:]
-                out = hu.correspondence(prev, curr)
-            else:
-                out = np.zeros_like(prev)
-        else:
-            if f"frame_{frame}" in file[f"/fov_{fov}"]:
-                curr = file[f"/fov_{fov}/frame_{frame}"][:]
-                out = curr
-            else:
-                out = np.zeros((self.rows, self.cols))
-        save_label(self.hdfpath, fov, frame, out.astype(np.uint16))
 
     def close_window(self):
         self.finished.emit()
