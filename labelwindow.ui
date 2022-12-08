@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>971</width>
-    <height>893</height>
+    <width>1788</width>
+    <height>1007</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_20">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_5">
+     <layout class="QVBoxLayout" name="verticalLayout_16">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <property name="spacing">
@@ -701,10 +701,23 @@ color:rgb(255, 255, 255)</string>
           </layout>
          </widget>
         </item>
+        <item>
+         <spacer name="horizontalSpacer_13">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
         <item>
          <widget class="QTabWidget" name="tabWidget2">
           <property name="sizePolicy">
@@ -715,7 +728,7 @@ color:rgb(255, 255, 255)</string>
           </property>
           <property name="maximumSize">
            <size>
-            <width>220</width>
+            <width>120</width>
             <height>16777215</height>
            </size>
           </property>
@@ -788,31 +801,67 @@ color:rgb(255, 255, 255)</string>
          </widget>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_16">
-          <item alignment="Qt::AlignHCenter|Qt::AlignTop">
-           <widget class="LabelWidget" name="label_widget" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>600</width>
-              <height>600</height>
-             </size>
-            </property>
-            <property name="baseSize">
-             <size>
-              <width>512</width>
-              <height>512</height>
-             </size>
-            </property>
-            <property name="focusPolicy">
-             <enum>Qt::StrongFocus</enum>
-            </property>
-           </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item alignment="Qt::AlignLeft">
+             <widget class="ViewWidget" name="view_widget_left" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>512</width>
+                <height>512</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="LabelWidget" name="label_widget" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>600</width>
+                <height>600</height>
+               </size>
+              </property>
+              <property name="baseSize">
+               <size>
+                <width>512</width>
+                <height>512</height>
+               </size>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
+              </property>
+             </widget>
+            </item>
+            <item alignment="Qt::AlignRight">
+             <widget class="ViewWidget" name="view_widget_right" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>512</width>
+                <height>512</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -891,6 +940,19 @@ color:rgb(255, 255, 255)</string>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_17">
               <item>
+               <spacer name="horizontalSpacer_14">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
                <widget class="QLabel" name="labelTimeInterval">
                 <property name="text">
                  <string>Time interval</string>
@@ -952,6 +1014,19 @@ color:rgb(255, 255, 255)</string>
                 </property>
                </widget>
               </item>
+              <item>
+               <spacer name="horizontalSpacer_15">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
              </layout>
             </item>
            </layout>
@@ -969,8 +1044,8 @@ color:rgb(255, 255, 255)</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>971</width>
-     <height>21</height>
+     <width>1788</width>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1273,6 +1348,12 @@ color:rgb(255, 255, 255)</string>
    <class>ViewSlider</class>
    <extends>QSlider</extends>
    <header location="global">viewslider.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ViewWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">viewwidget</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

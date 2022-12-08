@@ -12,7 +12,7 @@ from PyQt5.QtCore import QCoreApplication, QObject, QTimer, Qt, QThreadPool, pyq
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QMenu, QHeaderView, QMessageBox, QStyle, \
     QAbstractItemView, QFileDialog, QPushButton, QTableWidgetItem, QProgressBar
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QIcon, QPalette, QBrush
-from base import get_label_color, save_label, get_default_path
+from base import get_label_color, save_label, get_default_path, get_label_from_hdf
 from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
 from unetdialog import UNetDialog
@@ -115,6 +115,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.delete_id_at_mouse_position.connect(self.delete_label_at_mouse)
         self.label_widget.select_id_at_mouse_position.connect(self.select_label_at_mouse)
         self.label_widget.draw_at_mouse_position.connect(self.draw_at_mouse)
+        self.label_widget.send_zoom_point.connect(self.zoom_view_widget)
         self.pixmap_scale = 1
         self.brush_size = 50
 
@@ -177,7 +178,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         unet_dialog.exec()
 
     def update_label_display(self):
-        label = self.get_label_from_hdf()
+        label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
         if label is None:
             label = np.zeros(self.image_shape, dtype=np.uint16)
         self.label_widget.set_label(label)
@@ -270,8 +271,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             else:
                 file.create_dataset(f"/fov_{self.fov}/frame_{frame}", data=label, compression="gzip")
         file.close()
-        label = self.get_label_from_hdf()
+        label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
         self.label_widget.set_label(label)
+        self.set_view_labels()
         self.label_widget.set_label_value(self.label_value)
         self.generate_label_table_from_label(label)
 
@@ -313,21 +315,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.time_steps = self.nd2_time_steps[self.fov]
         image = self.images[self.frame_index]
         self.label_widget.set_image(image)
+        self.set_view_images()
         self.update_label_display()
-
-    def get_label_from_hdf(self) -> np.ndarray:
-        """
-        Get the label for current frame and current fov.
-        Return None if label is not found in the hdf file.
-        """
-        # fov and time are stored as fov group and frame dataset as /fov_i/frame_j
-        file = h5py.File(self.hdfpath, "r")
-        if f"frame_{self.frame_index}" in file[f"/fov_{self.fov}"]:
-            label = file[f"/fov_{self.fov}/frame_{self.frame_index}"][:]
-        else:
-            label = None
-        file.close()
-        return label
 
     def create_hdf(self):
         """
@@ -355,9 +344,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         file, _ = QFileDialog.getOpenFileName(self, "Open hdf5", ".\\", "hdf5 file (*.h5)")
         if file:
             self.hdfpath = file
-            label = self.get_label_from_hdf()
+            label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
             if label:
                 self.label_widget.set_label(label)
+                self.set_view_labels()
             self.is_saved = True
             self.is_first_save = False
             QMessageBox.information(self, "Success", "hdf5 file loaded")
@@ -399,7 +389,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             # update default coords
             self.update_default_coords()
             # update max label value
-            label = self.get_label_from_hdf()
+            label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
             self.max_label_value = np.amax(label)
             # regenerate label table
             self.generate_label_table_from_label(label)
@@ -420,11 +410,17 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.lineEditCurrentTime.setText("0")
             # update label widgets
             self.label_widget.set_label(label)
+            self.set_view_labels()
             self.label_widget.show_label()
+            self.view_widget_left.show_label()
+            self.view_widget_right.show_label()
             self.label_widget.show_label_id()
+            self.view_widget_left.show_label_id()
+            self.view_widget_right.show_label_id()
             if self.label_table.rowCount() > 1:
                 self.label_table.selectRow(0)
                 self.label_table_select()
+            self.jump_to_frame(0)
             self.is_saved = True
             self.is_first_save = False
 
@@ -478,6 +474,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # jump to the first frame with label and refresh label
         self.jump_to_frame(start_frame)
         self.label_widget.set_label(label)
+        self.set_view_labels()
         self.generate_label_table_from_label(label)
         # save the first frame that has a label, and start tracking
         save_label(self.hdfpath, self.fov, start_frame, label.astype(np.uint16))
@@ -501,8 +498,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         for i in range(self.frame_index, self.num_frames):
             self.progress_bar.setValue(i)
             self.track(self.fov, i)
-        label = self.get_label_from_hdf()
+        label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
         self.label_widget.set_label(label)
+        self.set_view_labels()
         self.generate_label_table_from_label(label)
         self.progress_bar.hide()
 
@@ -607,6 +605,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_table.selectRow(row)
             self.label_table.verticalScrollBar().setSliderPosition(row)
 
+    def zoom_view_widget(self, p: QPointF):
+        p = p / 600 * 512
+        self.view_widget_left.zoom_point = p
+        self.view_widget_right.zoom_point = p
+        self.view_widget_left.zoom(self.label_widget.scale)
+        self.view_widget_right.zoom(self.label_widget.scale)
+
     def draw_at_mouse(self, x, y):
         """
         If label value at mouse is not 0, 
@@ -657,6 +662,34 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         else:
             self.jump_to_frame(self.frame_index - 1)
 
+    def set_view_images(self):
+        """
+        Set all images for left view widget and right view widget.
+        Index bound is checked for view widget
+        """
+        default_img = np.zeros(self.image_shape, dtype=np.uint16)
+        if self.frame_index > 0:
+            self.view_widget_left.set_image(self.images[self.frame_index - 1])
+        else:
+            self.view_widget_left.set_image(default_img)
+        if self.frame_index < self.num_frames - 1:
+            self.view_widget_right.set_image(self.images[self.frame_index + 1])
+        else:
+            self.view_widget_right.set_image(default_img)
+
+    def set_view_labels(self):
+        default_lb = np.zeros(self.image_shape, dtype=np.uint16)
+        llb = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index - 1)
+        if llb is None or self.frame_index == 0:
+            self.view_widget_left.set_label(default_lb)
+        else:
+            self.view_widget_left.set_label(llb)
+        rlb = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index + 1)
+        if rlb is None or self.frame_index == self.num_frames - 1:
+            self.view_widget_right.set_label(default_lb)
+        else:
+            self.view_widget_right.set_label(rlb)
+
     def jump_to_frame(self, index: int):
         """
         Jump to frame, and update widgets accordingly. 
@@ -672,11 +705,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.brush_size = self.label_widget.brush_size
             self.viewSlider.setValue(index)
             self.label_widget.set_image(self.images[index])
-            label = self.get_label_from_hdf()
+            self.set_view_images()
+            label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
             if label is None:
                 label = np.zeros(self.image_shape, dtype=np.uint16)
             self.max_label_value = np.amax(label)
             self.label_widget.set_label(label)
+            self.set_view_labels()
             self.generate_label_table_from_label(label)
             self.label_widget.set_scale(self.pixmap_scale)
             self.label_widget.set_brush_size(self.brush_size)

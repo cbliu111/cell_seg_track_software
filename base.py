@@ -54,7 +54,7 @@ def save_label(hdfpath, fov, frame, label):
     """
     Save label at field of view (fov), frame (frame) in the h5py file (hdfpath).
     h5 file has group fov_i and dataset frame_i.
-    Labels are np.uint8 with maximum 255, chosen to be easily converted to RGB color map.
+    Labels are np.uint16 then scaled to 255, chosen to be easily converted to RGB color map.
     """
     file = h5py.File(hdfpath, "r+")
     if f"frame_{frame}" in file[f"/fov_{fov}"]:
@@ -78,3 +78,17 @@ def get_default_path(nd2filepath, post: str):
         tmp += temp_list[k] + '/'
     hdf_name = temp_list[-1].split('.')[-2]
     return tmp + hdf_name + post
+
+def get_label_from_hdf(hdfpath, fov, frame) -> np.ndarray:
+    """
+    Get the label for current frame and current fov.
+    Return None if label is not found in the hdf file.
+    """
+    # fov and time are stored as fov group and frame dataset as /fov_i/frame_j
+    file = h5py.File(hdfpath, "r")
+    if f"frame_{frame}" in file[f"/fov_{fov}"]:
+        label = file[f"/fov_{fov}/frame_{frame}"][:]
+    else:
+        label = None
+    file.close()
+    return label

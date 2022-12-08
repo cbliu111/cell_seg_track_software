@@ -48,6 +48,7 @@ class LabelWidget(QWidget):
     paste_id_inplace = Signal()
     delete_id_at_mouse_position = Signal(int, int)
     draw_at_mouse_position = Signal(int, int)
+    send_zoom_point = Signal(QPointF)
 
     def __init__(self, parent=None, input_image=None, input_label=None):
         super(LabelWidget, self).__init__()
@@ -55,7 +56,7 @@ class LabelWidget(QWidget):
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMouseTracking(True)
         self.setCursor(Qt.ArrowCursor)
-        self.setFixedSize(500, 500)
+        self.setFixedSize(600, 600)
 
         if input_image is None:
             self.image = np.zeros((512, 512), dtype=np.uint16)
@@ -397,18 +398,21 @@ class LabelWidget(QWidget):
         self.scale = sf
         self.render.set_scale(sf)
         self.zoom_point = self.mouse_pos
+        self.send_zoom_point.emit(self.zoom_point)
         self.update()
 
     def zoom_in(self):
         self.scale = self.zoom_factor
         self.render.set_scale(self.scale)
         self.zoom_point = self.mouse_pos
+        self.send_zoom_point.emit(self.zoom_point)
         self.update()
 
     def zoom_out(self):
         self.scale = 1
         self.render.set_scale(self.scale)
         self.zoom_point = self.mouse_pos
+        self.send_zoom_point.emit(self.zoom_point)
         self.update()
 
     def scroll_left(self):
