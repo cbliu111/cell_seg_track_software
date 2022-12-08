@@ -1,5 +1,6 @@
 import sys
 import uuid
+import skimage.measure
 import numpy as np
 from PyQt5.QtGui import QPixmap, QPainter, QColor, QFont, QImage, qRgb
 from PyQt5.QtWidgets import QWidget, QApplication
@@ -50,6 +51,9 @@ class ImageRender(QRunnable):
             "erase": self.erase,
         }
         self.signals = RenderSignals()
+
+        # label contours
+        self.label_contour_lines = []
 
     def set_image_shape(self, shape: tuple):
         self.w, self.h = shape
@@ -133,8 +137,26 @@ class ImageRender(QRunnable):
     @Slot()
     def run(self):
         if self._show_label:
-            self.brush_mask[self.brush_type]()  # generate brush mask according to brush_mode
-            self.draw_route[self.draw_mode]()  # draw or erase value on the label matrix
+            # generate brush mask according to brush_mode
+            self.brush_mask[self.brush_type]()
+            # draw or erase value on the label matrix
+            self.draw_route[self.draw_mode]()
+            # find all label contours
+            self.label_contour_lines.clear()
+            for lv in np.unique(self.label):
+                if lv == 0:
+                    continue
+                contours = skimage.measure.find_contours(self.label == lv, 0.5)
+                for c in contours:
+                    contour_line = []
+                    for i in range(c.shape[0]):
+                        # to compensate the loss during float to int conversion
+                        x = c[i, 0] + 1
+                        y = c[i, 1] + 1
+                        p = QPoint(int(y), int(x))
+                        contour_line.append(p)
+                    self.label_contour_lines.append(contour_line)
+            # convert label to image
             q_image = numpy_to_image(self.label, QImage.Format_Indexed8)
             q_image.setColorTable(COLOR_TABLE)
             q_image = q_image.convertToFormat(QImage.Format_RGB888)

@@ -5,7 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="473e4a69-526f-491e-9e55-49d1a1881564" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/Dynamics.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Dynamics.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imagerender.py" beforeDir="false" afterPath="$PROJECT_DIR$/imagerender.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/labelwidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwidget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +52,7 @@
       <recent name="E:\pyqt_installation\Dynamics" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.labelwindow">
     <configuration name="label_widget" type="PythonConfigurationType" factoryName="Python">
       <module name="Dynamics" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -55,9 +60,9 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="D:\anaconda\python.exe" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/labelwidget.py" />
@@ -76,9 +81,9 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="D:\anaconda\python.exe" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/labelwindow.py" />

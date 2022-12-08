@@ -239,21 +239,34 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
     def threshold_label_area(self):
         """
-        Remove label with size larger than 4096,
-        or smaller than 64.
+        Remove label with size larger than 4096 or smaller than 64 for all the frames.
         """
-        lb = self.label_widget.render.label
-        for lv in np.unique(lb):
-            if lv == 0:
-                continue
+        file = h5py.File(self.hdfpath, "r+")
+        for frame in range(self.num_frames):
+            if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
+                label = file[f"/fov_{self.fov}/frame_{frame}"][:]
             else:
-                mask = lb == lv
-                s = mask.sum()
-                if s > 4096 or s < 64:
-                    lb[mask] = 0
-        self.label_widget.set_label(lb)
+                label = None
+            if label is None:
+                continue
+            for lv in np.unique(label):
+                if lv == 0:
+                    continue
+                else:
+                    mask = label == lv
+                    s = mask.sum()
+                    if s > 4096 or s < 64:
+                        label[mask] = 0
+            if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
+                dataset = file[f"/fov_{self.fov}/frame_{frame}"]
+                dataset[:] = label.astype(np.uint8)
+            else:
+                file.create_dataset(f"/fov_{self.fov}/frame_{frame}", data=label, compression="gzip")
+        file.close()
+        label = self.get_label_from_hdf()
+        self.label_widget.set_label(label)
         self.label_widget.set_label_value(self.label_value)
-        self.generate_label_table_from_label(lb)
+        self.generate_label_table_from_label(label)
 
     def undo(self):
         # TODO:
@@ -284,6 +297,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_brush_size(value)
 
     def update_default_coords(self):
+        """
+        Update default coords (v, c) of the images read from nd2 file.
+        Update time steps, label widget and label table accordingly.
+        """
         self.images.default_coords["v"] = self.fov
         self.images.default_coords["c"] = self.channel
         self.time_steps = self.nd2_time_steps[self.fov]
@@ -355,7 +372,6 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         if file:
             # read nd2 file
             self.nd2filepath = file
-            self.hdfpath = get_default_path(self.nd2filepath, ".h5")
             self.images = ND2Reader(self.nd2filepath)
             # obtain metadata
             self.num_fov = self.images.sizes["v"]
@@ -368,11 +384,14 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.channel = 0
             self.frame_index = 0
             self.nd2_time_steps = self.images.timesteps.reshape(self.num_frames, self.num_fov).T
-            self.update_default_coords()
             # if file exists, read, create otherwise
+            self.hdfpath = get_default_path(self.nd2filepath, ".h5")
             exist = os.path.exists(self.hdfpath)
             if not exist:
                 self.create_hdf()
+            # update default coords
+            self.update_default_coords()
+            # update max label value
             label = self.get_label_from_hdf()
             self.max_label_value = np.amax(label)
             # regenerate label table
@@ -647,7 +666,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.generate_label_table_from_label(label)
             self.label_widget.set_scale(self.pixmap_scale)
             self.label_widget.set_brush_size(self.brush_size)
-            self.label_widget.set_label_value(self.label_value)
+            self.label_widget.set_erase()
             self.label_widget.show_image()
             t = self.time_steps[index] / 60000
             self.lineEditCurrentTime.setText(f"{t : .2f}")

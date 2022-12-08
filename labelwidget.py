@@ -8,6 +8,18 @@ from imagerender import ImageRender
 from base import numpy_to_image, get_label_centers, DEFAULT_COLORS
 
 
+def draw_polygon(line: list, painter: QPainter) -> None:
+    lp = QPoint()
+    for i, p in enumerate(line):
+        if i == 0:
+            lp = p
+        else:
+            painter.drawLine(lp, p)
+            lp = p
+    if len(line) > 0:
+        painter.drawLine(line[-1], line[0])
+
+
 class LabelWidget(QWidget):
     """
     The label window used for interacting with the images and labels.
@@ -64,6 +76,7 @@ class LabelWidget(QWidget):
         self.scaled_label = None
         self.scale = 1
 
+        # draw status
         self.offset = QPointF()
         self.mouse_pos = QPointF()
         self.zoom_point = QPointF()
@@ -75,6 +88,7 @@ class LabelWidget(QWidget):
         self.line = []
         self.brush_size = 50
         self.coordinate = ""
+        self.label_contour_lines = []
 
         # label id
         self.id_values = []
@@ -162,24 +176,32 @@ class LabelWidget(QWidget):
         nh = int(self.height() * self.scale)
         self.offset = self.zoom_point * (1 - self.scale)
         self.scaled_image = self.pix_image.scaled(nw, nh, Qt.KeepAspectRatio)
-        if self._show_label:
-            self.scaled_label = self.pix_label.scaled(nw, nh, Qt.KeepAspectRatio)
 
         painter = QPainter(self)
         painter.setOpacity(1)
         painter.drawPixmap(self.offset, self.scaled_image)
         if self._show_label:
             painter.setOpacity(0.2)
+            self.scaled_label = self.pix_label.scaled(nw, nh, Qt.KeepAspectRatio)
             painter.drawPixmap(self.offset, self.scaled_label)
-        if self.show_id and self._show_label:
-            font = painter.font()
-            font.setPointSize(10)
-            painter.setFont(font)
+            # show label contours
             painter.setOpacity(1)
-            painter.setPen(QPen(Qt.green))
-            for i, v in enumerate(self.id_values):
-                p = self.map_to_screen(QPoint(self.id_x_cs[i], self.id_y_cs[i]))
-                painter.drawText(p, f"{v}")
+            painter.setPen(Qt.green)
+            # show contours only when zoomed in
+            if self.scale > 1:
+                for line in self.label_contour_lines:
+                    # draw contour
+                    # the conversion to screen coordinates must be done during the painting
+                    screen_line = [self.map_to_screen(p) for p in line]
+                    draw_polygon(screen_line, painter)
+            # show label id
+            if self.show_id:
+                font = painter.font()
+                font.setPointSize(10)
+                painter.setFont(font)
+                for i, v in enumerate(self.id_values):
+                    p = self.map_to_screen(QPoint(self.id_x_cs[i], self.id_y_cs[i]))
+                    painter.drawText(p, f"{v}")
 
         if self.leave:
             return
@@ -187,7 +209,6 @@ class LabelWidget(QWidget):
         font = painter.font()
         font.setPointSize(10)
         painter.setFont(font)
-        painter.setOpacity(1)
         metrics = painter.fontMetrics()
         text_width = metrics.horizontalAdvance(self.coordinate)
         painter.setPen(Qt.NoPen)
@@ -196,10 +217,10 @@ class LabelWidget(QWidget):
         painter.setPen(Qt.red)
         painter.drawText(int((self.width() - text_width) / 2), metrics.leading() + metrics.ascent(), self.coordinate)
 
+        # draw brush trajectory
         if self._show_label:
-            # draw brush trajectory
             painter.setOpacity(0.2)
-            painter.setPen(Qt.red)
+            painter.setPen(Qt.green)
             self.brush_route[self.brush_type](painter)
 
         painter.end()
@@ -239,16 +260,7 @@ class LabelWidget(QWidget):
         pen.setColor(color)
         pen.setWidth(3)
         painter.setPen(pen)
-        lp = QPointF()
-        for i, p in enumerate(self.brush_traj):
-            if i == 0:
-                painter.drawEllipse(p, 2, 2)
-                lp = p
-            else:
-                painter.drawLine(lp, p)
-                lp = p
-        if self.brush_traj:
-            painter.drawLine(self.brush_traj[-1], self.brush_traj[0])
+        draw_polygon(self.brush_traj, painter)
 
     def line_brush(self, painter):
         pen = QPen()
@@ -267,7 +279,11 @@ class LabelWidget(QWidget):
 
     def set_image(self, input_image):
         self.w, self.h = self.image.shape
-        self.image = skimage.exposure.adjust_gamma(input_image, 0.5)
+        low = 0.3 * 65535
+        high = 0.9 * 65535
+        img = skimage.exposure.rescale_intensity(input_image, out_range=(low, high))
+        self.image = img.astype(np.uint16)
+        # self.image = skimage.exposure.adjust_gamma(input_image, 0.4)
         self.render.set_image_shape(self.image.shape)
         q_image = numpy_to_image(self.image, QImage.Format_Grayscale16)
         self.pix_image = QPixmap(q_image)
@@ -448,7 +464,9 @@ class LabelWidget(QWidget):
 
     @Slot(QPixmap)
     def update_label_pixmap(self, pixmap):
-        self.id_values, self.id_x_cs, self.id_y_cs = get_label_centers(self.render.label)
+        self.label_contour_lines = self.render.label_contour_lines
+        lb = self.render.label
+        self.id_values, self.id_x_cs, self.id_y_cs = get_label_centers(lb)
         self.pix_label = pixmap
         self.update()
         self.label_updated.emit()
@@ -519,7 +537,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     image = io.imread("cell.tif")
     label = np.zeros(image.shape, dtype=np.uint8)
-    label[0:200, 0:100] = 1
+    label[1:200, 1:100] = 1
     label[100:150, 100:200] = 2
     label[200:250, 200:300] = 3
     label[300:350, 300:400] = 4
@@ -527,12 +545,9 @@ if __name__ == "__main__":
     win = LabelWidget(None, image, label)
     win.show()
     win.set_label_value(3)
-    # win.set_label(label)
-    # Z is zoom
-    # D is draw, default label value is 1
-    # E is erase
     win.set_brush_size(30)
     win.set_zoom_factor(5)
     win.show_label()
     win.show_label_id()
+    win.set_image(image)
     sys.exit(app.exec())
