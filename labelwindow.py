@@ -353,6 +353,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_image(image)
         self.set_view_images()
         label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
+        if label is None:
+            return
         self.label_widget.set_label(label)
         self.set_view_labels()
         self.update_label_display()
@@ -552,7 +554,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.progress_bar.show()
         label = self.label_widget.render.label
         self.new_cell_id_for_track = np.amax(label) + 1
-        for i in range(self.frame_index, self.num_frames):
+        save_label(self.hdfpath, self.fov, self.frame_index, label)
+        for i in range(self.frame_index+1, self.num_frames):
             self.progress_bar.setValue(i)
             self.track(self.fov, i)
         label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
@@ -876,7 +879,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         label = self.label_widget.render.label
         mask = self.copied_label > 0
-        label[mask] = self.copied_label[mask]
+        # check if the copied label values is already in the current label
+        lv = np.amax(self.copied_label[mask])
+        for value in np.unique(label):
+            if lv == value:
+                lv = np.amax(label) + 1
+        label[mask] = lv
         self.label_widget.set_label(label)
         lv = self.copied_label.max()
         if lv > self.max_label_value:

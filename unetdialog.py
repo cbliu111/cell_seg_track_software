@@ -74,7 +74,7 @@ class UNetDialog(QDialog, Ui_Dialog):
         start_frame = int(self.start_frame_line.text())
         end_frame = int(self.end_frame_line.text())
         start_frame = np.clip(start_frame, 0, self.frames)
-        end_frame = np.clip(end_frame, 0, self.frames)
+        end_frame = np.clip(end_frame, 0, self.frames + 1)
         if end_frame <= start_frame:
             end_frame = start_frame + 1
         self.frame_list = [i for i in range(start_frame, end_frame)]
