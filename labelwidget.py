@@ -64,6 +64,7 @@ class LabelWidget(QWidget):
         # signals
         self.signals = LabelWidgetSignals()
 
+        # image and label
         if input_image is None:
             self.image = np.zeros((512, 512), dtype=np.uint16)
         else:
@@ -72,6 +73,7 @@ class LabelWidget(QWidget):
             self.label = np.zeros_like(self.image, dtype=np.uint16)
         else:
             self.label = input_label
+        self.ori_image = self.image.copy()
         q_image = numpy_to_image(self.image, QImage.Format_Grayscale16)
         q_label = numpy_to_image(self.label.astype(np.uint8), QImage.Format_Indexed8)
         self.pix_image = QPixmap(q_image)
@@ -285,7 +287,8 @@ class LabelWidget(QWidget):
                 painter.drawLine(lp, p)
                 lp = p
 
-    def set_image(self, input_image):
+    def set_image(self, input_image: np.ndarray):
+        self.ori_image = input_image.copy()
         self.w, self.h = self.image.shape
         low = 0.3 * 65535
         high = 0.9 * 65535
@@ -368,7 +371,8 @@ class LabelWidget(QWidget):
         """
         self.mouse_pos = event.pos()
         x, y = self.get_image_position_from_mouse()
-        self.coordinate = f"xy[{x}, {y}], label[{self.label[x, y]}]"
+        # show label and image value
+        self.coordinate = f"xy[{x}, {y}], value[{self.ori_image[x, y]}], label[{self.label[x, y]}]"
         if event.buttons() & Qt.LeftButton:
             p = self.map_from_screen(event.pos())
             self.line.append(p)

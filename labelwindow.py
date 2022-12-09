@@ -95,6 +95,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         # tools group
         self.tool_box.setEnabled(True)
+        # using polygon as the default tool
+        self.tool_box.setCurrentIndex(2)
         self.tool_box.currentTextChanged.connect(lambda t: self.label_widget.set_brush_type(t))
         self.brush_size_box.setValue(50)
         self.brush_size_box.valueChanged.connect(self.set_brush_size)
