@@ -95,13 +95,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         # tools group
         self.tool_box.setEnabled(True)
-        # using polygon as the default tool
-        self.tool_box.setCurrentIndex(2)
         self.tool_box.currentTextChanged.connect(lambda t: self.label_widget.set_brush_type(t))
         self.brush_size_box.setValue(50)
         self.brush_size_box.valueChanged.connect(self.set_brush_size)
         self.draw_button.clicked.connect(self.set_draw)
         self.erase_button.clicked.connect(self.set_erase)
+        # using polygon as the default tool
+        self.tool_box.setCurrentIndex(2)
 
         # change id group
         self.change_id_button.clicked.connect(self.change_label_id)
@@ -356,7 +356,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.set_view_images()
         label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
         if label is None:
-            return
+            label = np.zeros_like(image, dtype=np.uint16)
         self.label_widget.set_label(label)
         self.set_view_labels()
         self.update_label_display()
