@@ -326,6 +326,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         pass
 
     def set_channel(self, c):
+        lb = self.label_widget.render.label
+        save_label(self.hdfpath, self.fov, self.frame_index, lb)
         self.channel = c
         self.update_default_coords()
 
