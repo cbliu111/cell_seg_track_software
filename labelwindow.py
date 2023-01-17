@@ -883,6 +883,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         label = self.label_widget.render.label
         mask = self.copied_label > 0
+        if mask.size == 0:
+            return
         # check if the copied label values is already in the current label
         lv = np.amax(self.copied_label[mask])
         for value in np.unique(label):
