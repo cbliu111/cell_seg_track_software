@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1788</width>
-    <height>1007</height>
+    <width>2493</width>
+    <height>1368</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,9 +30,15 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="minimumSize">
+           <size>
+            <width>150</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="maximumSize">
            <size>
-            <width>120</width>
+            <width>100</width>
             <height>16777215</height>
            </size>
           </property>
@@ -71,7 +77,7 @@
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>60</width>
+                 <width>100</width>
                  <height>20</height>
                 </size>
                </property>
@@ -109,7 +115,7 @@
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>60</width>
+                 <width>100</width>
                  <height>20</height>
                 </size>
                </property>
@@ -127,8 +133,8 @@
          <widget class="QGroupBox" name="groupBox_3">
           <property name="maximumSize">
            <size>
-            <width>120</width>
-            <height>16777215</height>
+            <width>200</width>
+            <height>200</height>
            </size>
           </property>
           <property name="title">
@@ -147,8 +153,8 @@
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>100</width>
-                 <height>20</height>
+                 <width>200</width>
+                 <height>200</height>
                 </size>
                </property>
                <property name="styleSheet">
@@ -240,9 +246,21 @@
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox">
-          <property name="maximumSize">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
            <size>
             <width>200</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>60</width>
             <height>16777215</height>
            </size>
           </property>
@@ -286,9 +304,15 @@
               <layout class="QVBoxLayout" name="verticalLayout_2">
                <item>
                 <widget class="QLineEdit" name="first_id_edit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maximumSize">
                   <size>
-                   <width>50</width>
+                   <width>55</width>
                    <height>20</height>
                   </size>
                  </property>
@@ -298,7 +322,7 @@
                 <widget class="QLineEdit" name="second_id_edit">
                  <property name="maximumSize">
                   <size>
-                   <width>50</width>
+                   <width>60</width>
                    <height>20</height>
                   </size>
                  </property>
@@ -424,7 +448,7 @@ color:rgb(255, 255, 255)</string>
          <widget class="QGroupBox" name="groupBox_5">
           <property name="maximumSize">
            <size>
-            <width>120</width>
+            <width>130</width>
             <height>16777215</height>
            </size>
           </property>
@@ -467,6 +491,10 @@ color:rgb(255, 255, 255)</string>
                <property name="text">
                 <string/>
                </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-up.png</normaloff>../icons/32x32/actions/go-up.png</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="2">
@@ -492,6 +520,10 @@ color:rgb(255, 255, 255)</string>
                </property>
                <property name="text">
                 <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-previous.png</normaloff>../icons/32x32/actions/go-previous.png</iconset>
                </property>
               </widget>
              </item>
@@ -519,6 +551,10 @@ color:rgb(255, 255, 255)</string>
                <property name="text">
                 <string/>
                </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-next.png</normaloff>../icons/32x32/actions/go-next.png</iconset>
+               </property>
               </widget>
              </item>
              <item row="2" column="0">
@@ -544,6 +580,10 @@ color:rgb(255, 255, 255)</string>
                </property>
                <property name="text">
                 <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-down.png</normaloff>../icons/32x32/actions/go-down.png</iconset>
                </property>
               </widget>
              </item>
@@ -603,6 +643,10 @@ color:rgb(255, 255, 255)</string>
                <property name="text">
                 <string/>
                </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-up.png</normaloff>../icons/32x32/actions/go-up.png</iconset>
+               </property>
               </widget>
              </item>
              <item row="0" column="2">
@@ -628,6 +672,10 @@ color:rgb(255, 255, 255)</string>
                </property>
                <property name="text">
                 <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-previous.png</normaloff>../icons/32x32/actions/go-previous.png</iconset>
                </property>
               </widget>
              </item>
@@ -655,6 +703,10 @@ color:rgb(255, 255, 255)</string>
                <property name="text">
                 <string/>
                </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-next.png</normaloff>../icons/32x32/actions/go-next.png</iconset>
+               </property>
               </widget>
              </item>
              <item row="2" column="0">
@@ -680,6 +732,10 @@ color:rgb(255, 255, 255)</string>
                </property>
                <property name="text">
                 <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-down.png</normaloff>../icons/32x32/actions/go-down.png</iconset>
                </property>
               </widget>
              </item>
@@ -721,14 +777,14 @@ color:rgb(255, 255, 255)</string>
         <item>
          <widget class="QTabWidget" name="tabWidget2">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+           <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
           <property name="maximumSize">
            <size>
-            <width>120</width>
+            <width>220</width>
             <height>16777215</height>
            </size>
           </property>
@@ -814,30 +870,36 @@ color:rgb(255, 255, 255)</string>
               </property>
               <property name="minimumSize">
                <size>
-                <width>512</width>
-                <height>512</height>
+                <width>600</width>
+                <height>600</height>
                </size>
               </property>
              </widget>
             </item>
-            <item>
+            <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
              <widget class="LabelWidget" name="label_widget" native="true">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <property name="minimumSize">
                <size>
-                <width>600</width>
-                <height>600</height>
+                <width>1024</width>
+                <height>1024</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>130</width>
+                <height>16777215</height>
                </size>
               </property>
               <property name="baseSize">
                <size>
-                <width>512</width>
-                <height>512</height>
+                <width>0</width>
+                <height>-1</height>
                </size>
               </property>
               <property name="focusPolicy">
@@ -855,8 +917,8 @@ color:rgb(255, 255, 255)</string>
               </property>
               <property name="minimumSize">
                <size>
-                <width>512</width>
-                <height>512</height>
+                <width>600</width>
+                <height>600</height>
                </size>
               </property>
              </widget>
@@ -890,35 +952,55 @@ color:rgb(255, 255, 255)</string>
               <item>
                <widget class="QPushButton" name="buttonFirstFrame">
                 <property name="text">
-                 <string>FF</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/32x32/actions/media-skip-backward.png</normaloff>../icons/32x32/actions/media-skip-backward.png</iconset>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="buttonPreviousFrame">
                 <property name="text">
-                 <string>PF</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/32x32/actions/media-seek-backward.png</normaloff>../icons/32x32/actions/media-seek-backward.png</iconset>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="buttonPlay">
                 <property name="text">
-                 <string>Play</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/32x32/actions/media-playback-start.png</normaloff>../icons/32x32/actions/media-playback-start.png</iconset>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="buttonNextFrame">
                 <property name="text">
-                 <string>NF</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/32x32/actions/media-seek-forward.png</normaloff>../icons/32x32/actions/media-seek-forward.png</iconset>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="buttonLastFrame">
                 <property name="text">
-                 <string>LF</string>
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/32x32/actions/media-skip-forward.png</normaloff>../icons/32x32/actions/media-skip-forward.png</iconset>
                 </property>
                </widget>
               </item>
@@ -939,6 +1021,12 @@ color:rgb(255, 255, 255)</string>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_17">
+              <property name="spacing">
+               <number>1</number>
+              </property>
+              <property name="sizeConstraint">
+               <enum>QLayout::SetMaximumSize</enum>
+              </property>
               <item>
                <spacer name="horizontalSpacer_14">
                 <property name="orientation">
@@ -1044,8 +1132,8 @@ color:rgb(255, 255, 255)</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1788</width>
-     <height>23</height>
+     <width>2493</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1053,6 +1141,7 @@ color:rgb(255, 255, 255)</string>
      <string>File</string>
     </property>
     <addaction name="actionOpen_nd2"/>
+    <addaction name="actionAppend_nd2"/>
     <addaction name="actionOpen_dir"/>
     <addaction name="actionLoad_hdf5"/>
     <addaction name="separator"/>
@@ -1112,11 +1201,19 @@ color:rgb(255, 255, 255)</string>
      </property>
      <addaction name="actionU_Net_2"/>
     </widget>
+    <widget class="QMenu" name="menuClick_label">
+     <property name="title">
+      <string>Click label</string>
+     </property>
+     <addaction name="actionLoad_model"/>
+     <addaction name="actionSet_segment_box_size"/>
+    </widget>
     <addaction name="menuChose_model"/>
     <addaction name="menuTrain_model"/>
     <addaction name="menuFine_Tune_model"/>
     <addaction name="actionRetrack_from_current"/>
     <addaction name="actionRetrack_from_first"/>
+    <addaction name="menuClick_label"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -1135,8 +1232,20 @@ color:rgb(255, 255, 255)</string>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionOpen_nd2"/>
+   <addaction name="actionAppend_nd2"/>
+   <addaction name="actionLoad_model"/>
+   <addaction name="actionSet_segment_box_size"/>
+   <addaction name="actionRetrack_from_first"/>
+   <addaction name="actionRetrack_from_current"/>
+   <addaction name="actionExport"/>
   </widget>
   <action name="actionOpen_nd2">
+   <property name="icon">
+    <iconset>
+     <normalon>../icons/32x32/actions/document-open.png</normalon>
+    </iconset>
+   </property>
    <property name="text">
     <string>Open nd2</string>
    </property>
@@ -1242,8 +1351,15 @@ color:rgb(255, 255, 255)</string>
    </property>
   </action>
   <action name="actionExport">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/edit-redo.png</normaloff>../icons/32x32/actions/edit-redo.png</iconset>
+   </property>
    <property name="text">
     <string>Export</string>
+   </property>
+   <property name="toolTip">
+    <string>Export data</string>
    </property>
   </action>
   <action name="actionExport_movie">
@@ -1280,6 +1396,10 @@ color:rgb(255, 255, 255)</string>
    </property>
   </action>
   <action name="actionRetrack_from_current">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/go-next.png</normaloff>../icons/32x32/actions/go-next.png</iconset>
+   </property>
    <property name="text">
     <string>Retrack from current</string>
    </property>
@@ -1331,6 +1451,10 @@ color:rgb(255, 255, 255)</string>
    </property>
   </action>
   <action name="actionRetrack_from_first">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/go-last.png</normaloff>../icons/32x32/actions/go-last.png</iconset>
+   </property>
    <property name="text">
     <string>Retrack from first</string>
    </property>
@@ -1349,6 +1473,33 @@ color:rgb(255, 255, 255)</string>
   <action name="actionTurn_off_penetrate_mode">
    <property name="text">
     <string>Turn off penetrate mode</string>
+   </property>
+  </action>
+  <action name="actionLoad_model">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/go-jump.png</normaloff>../icons/32x32/actions/go-jump.png</iconset>
+   </property>
+   <property name="text">
+    <string>Load model</string>
+   </property>
+  </action>
+  <action name="actionSet_segment_box_size">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/view-fullscreen.png</normaloff>../icons/32x32/actions/view-fullscreen.png</iconset>
+   </property>
+   <property name="text">
+    <string>Set segment box size</string>
+   </property>
+  </action>
+  <action name="actionAppend_nd2">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/edit-copy.png</normaloff>../icons/32x32/actions/edit-copy.png</iconset>
+   </property>
+   <property name="text">
+    <string>Append nd2</string>
    </property>
   </action>
  </widget>

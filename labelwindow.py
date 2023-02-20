@@ -24,14 +24,28 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
     """
     The main label window for cell segmentation, tracking and data extracting.
     """
+
     def __init__(self):
         super(LabelWindow, self).__init__()
         self.setupUi(self)
 
-        # data
-        self.images = None
-        # fov and time are stored as fov_i and frame_i, self.labels is the hdf file
-        self.labels = None
+        # paths for data and label saving
+        # self.image_path = QDir.currentPath()
+        self.nd2filepaths = []
+        self.hdfpath = QDir.currentPath()
+        self.data_export_path = QDir.currentPath()
+
+        # important for locating the nd2 file for reading the correct image
+        self.num_frames_list = []
+        self.channel_names = []
+
+        self.total_frames = 0
+        self.num_fov = 0
+        self.num_channels = 0
+        self.image_shape = (512, 512)
+        self.fov = 0
+        self.channel = 0
+        # fov and time are stored as fov_i and frame_i
         # save labels for undo and redo
         self.saved_labels = None
         # copied label for paste
@@ -41,18 +55,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # status
         self.is_saved = True
         self.is_first_save = True
-        # paths
-        self.image_path = QDir.currentPath()
-        self.nd2filepath = QDir.currentPath()
-        self.hdfpath = QDir.currentPath()
-        self.save_data_path = QDir.currentPath()
 
-        self.num_frames = 0
-        self.num_fov = 0
-        self.num_channels = 0
-        self.image_shape = (512, 512)
-        self.fov = 0
-        self.channel = 0
         # current frame index for label widget display
         self.frame_index = 0
         # store the max label value to avoid duplication of label value
@@ -88,6 +91,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionRetrack_from_first.triggered.connect(self.retrack_from_first)
         self.actionTurn_on_penetrate_mode.triggered.connect(self.turn_on_penetrate_mode)
         self.actionTurn_off_penetrate_mode.triggered.connect(self.turn_off_penetrate_mode)
+        self.actionAppend_nd2.triggered.connect(self.append_nd2)
 
         # ROI group
         self.fov_box.currentIndexChanged.connect(self.set_fov)
@@ -115,8 +119,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # label widget
         self.label_widget.signals.read_next_frame.connect(self.jump_to_next_frame)
         self.label_widget.signals.read_previous_frame.connect(self.jump_to_previous_frame)
-        self.label_widget.signals.label_updated.connect(lambda:
-                                                self.generate_label_table_from_label(self.label_widget.render.label))
+        self.label_widget.signals.label_updated.connect(
+            lambda: self.generate_label_table_from_label(self.label_widget.render.label))
         self.label_widget.signals.copy_id_at_mouse_position.connect(self.copy_label_at_mouse)
         self.label_widget.signals.paste_id_inplace.connect(self.paste)
         self.label_widget.signals.delete_id_at_mouse_position.connect(self.delete_label_at_mouse)
@@ -152,15 +156,17 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.lineEditTimeInterval.setText(f"{self.time_steps[1] - self.time_steps[0]}")
 
         # play buttons
+        self.buttonPlay.setText("Play")
+        self.buttonPlay.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
         self.buttonPlay.clicked.connect(self.play)
         self.buttonFirstFrame.clicked.connect(lambda: self.jump_to_frame(0))
-        self.buttonLastFrame.clicked.connect(lambda: self.jump_to_frame(self.num_frames - 1))
+        self.buttonLastFrame.clicked.connect(lambda: self.jump_to_frame(self.total_frames - 1))
         self.buttonNextFrame.clicked.connect(self.jump_to_next_frame)
         self.buttonPreviousFrame.clicked.connect(self.jump_to_previous_frame)
 
         # view slider
         self.viewSlider.value_changed.connect(self.jump_to_frame)
-        self.viewSlider.setRange(0, self.num_frames - 1)
+        self.viewSlider.setRange(0, self.total_frames - 1)
         self.viewSlider.setValue(0)
 
         # dialog
@@ -176,11 +182,36 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setValue(0)
         self.statusbar.addWidget(self.progress_bar)
+        self.progress_bar.hide()
+
+    def get_image(self, overall_frame_index):
+        sum_frames = 0
+        for i, n in enumerate(self.num_frames_list):
+            if overall_frame_index < sum_frames + n:
+                idx = overall_frame_index - sum_frames
+                with ND2Reader(self.nd2filepaths[i]) as images:
+                    images.default_coords["v"] = self.fov
+                    images.default_coords["c"] = self.channel
+                    return images[idx]
+            else:
+                sum_frames += n
+
+    def get_image_2d(self, channel, frame, fov):
+        sum_frames = 0
+        data = 0  # data read from nd2 file
+        idx = 0  # image index
+        for i, n in enumerate(self.num_frames_list):
+            if frame < sum_frames + n:
+                idx = frame - sum_frames
+                with ND2Reader(self.nd2filepaths[i]) as images:
+                    images.default_coords["v"] = fov
+                    images.default_coords["c"] = channel
+                    return images[idx]
 
     def segment_with_unet(self):
-        unet_dialog = UNetDialog(frames=self.num_frames, fovs=self.num_fov)
+        unet_dialog = UNetDialog(frames=self.total_frames, fovs=self.num_fov)
         unet_dialog.set_channel(self.channel)
-        unet_dialog.set_images(self.images)
+        unet_dialog.set_images(self.images) # TODO: images should be changed to nd2 file list
         unet_dialog.set_hdf_path(self.hdfpath)
         unet_dialog.finished.connect(self.update_label_display)
         unet_dialog.exec()
@@ -258,7 +289,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         Remove label with size larger than 4096 or smaller than 64 for all the frames.
         """
         file = h5py.File(self.hdfpath, "r+")
-        for frame in range(self.num_frames):
+        for frame in range(self.total_frames):
             if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
                 label = file[f"/fov_{self.fov}/frame_{frame}"][:]
             else:
@@ -318,6 +349,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.view_widget_right.hide_label_id()
 
     def set_fov(self, f):
+        self.save_current_label()
         self.fov = f
         self.update_default_coords()
 
@@ -326,8 +358,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         pass
 
     def set_channel(self, c):
-        lb = self.label_widget.render.label
-        save_label(self.hdfpath, self.fov, self.frame_index, lb)
+        self.save_current_label()
         self.channel = c
         self.update_default_coords()
 
@@ -350,10 +381,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         Update default coords (v, c) of the images read from nd2 file.
         Update time steps, label widget and label table accordingly.
         """
-        self.images.default_coords["v"] = self.fov
-        self.images.default_coords["c"] = self.channel
+        # time steps is a function of fov, is a sequence of times for images
         self.time_steps = self.nd2_time_steps[self.fov]
-        image = self.images[self.frame_index]
+        image = self.get_image(self.frame_index)
         self.label_widget.set_image(image)
         self.set_view_images()
         label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
@@ -413,24 +443,29 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         file, _ = QFileDialog.getOpenFileName(self, "Open nd2", ".\\", "nd2 file (*.nd2)")
         if file:
             # read nd2 file
-            self.nd2filepath = file
-            self.images = ND2Reader(self.nd2filepath)
+            self.nd2filepaths.append(file)
+            images = ND2Reader(file)
+
             # obtain metadata
-            self.num_fov = self.images.sizes["v"]
-            self.num_frames = self.images.sizes["t"]
-            self.num_channels = self.images.sizes["c"]
-            self.image_shape = (self.images.sizes["x"], self.images.sizes["y"])
-            # set current fov, channel and time step sequence
-            # time steps are recorded sequentially for every capture
-            self.fov = 0
-            self.channel = 0
-            self.frame_index = 0
-            self.nd2_time_steps = self.images.timesteps.reshape(self.num_frames, self.num_fov).T
+            self.num_fov = images.sizes["v"]
+            self.num_channels = images.sizes["c"]
+            self.channel_names = images.metadata["channels"]
+            self.image_shape = (images.sizes["x"], images.sizes["y"])
+
+            # obtain frames in each nd2 file
+            self.num_frames_list.append(images.sizes["t"])
+            self.total_frames += images.sizes["t"]
+
+            # concatenate time steps for each fov
+            time_steps = images.timesteps.reshape(self.total_frames, self.num_fov).T
+            self.nd2_time_steps = time_steps
+
             # if file exists, read, create otherwise
-            self.hdfpath = get_default_path(self.nd2filepath, ".h5")
+            self.hdfpath = get_default_path(self.nd2filepaths[0], ".h5")
             exist = os.path.exists(self.hdfpath)
             if not exist:
                 self.create_hdf()
+
             # update default coords
             self.update_default_coords()
             # update max label value
@@ -439,18 +474,19 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             # regenerate label table
             self.generate_label_table_from_label(label)
             # update view slider
-            self.viewSlider.setRange(0, self.num_frames - 1)
-            self.viewSlider.setValue(0)
+            self.viewSlider.setRange(0, self.total_frames - 1)
+
             # update combobox
-            for c in self.images.metadata["channels"]:
+            for c in self.channel_names:
                 self.channel_box.addItem(c)
-            for i in self.images.metadata["fields_of_view"]:
+            for i in images.metadata["fields_of_view"]:
                 self.fov_box.addItem(f"fov_{i}")
+
             # update times in unit of minutes
             self.lineEditStartTime.setText("0")
             t = self.time_steps[-1] / 60000
             self.lineEditEndTime.setText(f"{t : .2f}")
-            t = t / self.num_frames
+            t = t / self.total_frames
             self.lineEditTimeInterval.setText(f"{t : .2f}")
             self.lineEditCurrentTime.setText("0")
             # update label widgets
@@ -470,7 +506,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.is_first_save = False
 
     def load_nd2(self):
-        if self.images or not self.is_saved:
+        if self.nd2filepaths or not self.is_saved:
             choice = QMessageBox.question(self, "Info", "Do you want to save current labels?",
                                           QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             if choice == QMessageBox.Yes:
@@ -488,9 +524,48 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.get_nd2_data()
             return
 
+    def append_nd2(self):
+        file, _ = QFileDialog.getOpenFileName(self, "Open nd2", ".\\", "nd2 file (*.nd2)")
+        if file:
+            # read nd2 file
+            self.nd2filepaths.append(file)
+            images = ND2Reader(file)
+
+            # obtain metadata, see if match
+            if self.num_fov != images.sizes["v"]:
+                QMessageBox.critical(self, "Number of field of views does not match.")
+                return
+            elif self.num_channels != images.sizes["c"]:
+                QMessageBox.critical(self, "Number of channels does not match.")
+                return
+            elif self.channel_names != images.metadata["channels"]:
+                QMessageBox.critical(self, "Channel names do not match.")
+                return
+            elif self.image_shape != (images.sizes["x"], images.sizes["y"]):
+                QMessageBox.critical(self, "Image width or height does not match.")
+                return
+
+            # obtain frames in each nd2 file
+            self.num_frames_list.append(images.sizes["t"])
+            self.total_frames += images.sizes["t"]
+
+            # concatenate time steps for each fov
+            time_steps = images.timesteps.reshape(-1, self.num_fov).T
+            self.nd2_time_steps = np.concatenate((self.nd2_time_steps, time_steps), axis=1)
+            self.time_steps = self.nd2_time_steps[self.fov]
+
+            # update times in unit of minutes
+            self.lineEditStartTime.setText("0")
+            t = self.time_steps[-1] / 60000
+            self.lineEditEndTime.setText(f"{t : .2f}")
+            t = t / self.total_frames
+            self.lineEditTimeInterval.setText(f"{t : .2f}")
+            self.lineEditCurrentTime.setText("0")
+            self.viewSlider.setRange(0, self.total_frames - 1)
+
     def draw_on_all_labels(self, mask: np.ndarray):
         if self.penetrate:
-            for frame in range(self.frame_index, self.num_frames):
+            for frame in range(self.frame_index, self.total_frames):
                 label = get_label_from_hdf(self.hdfpath, self.fov, frame)[:]
                 self.draw_mode = self.label_widget.draw_mode
                 self.label_value = self.label_widget.label_value
@@ -516,7 +591,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # locate the first frame that has a label
         file = h5py.File(self.hdfpath, "r")
         start_frame = -1
-        for i in range(self.num_frames):
+        for i in range(self.total_frames):
             if f"frame_{i}" in file[f"/fov_{self.fov}"]:
                 start_frame = i
                 break
@@ -541,9 +616,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.generate_label_table_from_label(label)
         # save the first frame that has a label, and start tracking
         save_label(self.hdfpath, self.fov, start_frame, label.astype(np.uint16))
-        self.progress_bar.setRange(start_frame, self.num_frames)
+        self.progress_bar.setRange(start_frame, self.total_frames)
         self.progress_bar.show()
-        for i in range(start_frame, self.num_frames):
+        for i in range(start_frame, self.total_frames):
             self.progress_bar.setValue(i)
             self.track(self.fov, i)
         self.progress_bar.hide()
@@ -554,12 +629,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         If current frame does not have a label, do nothing
         """
         # locate the first frame that has a label
-        self.progress_bar.setRange(self.frame_index, self.num_frames)
+        self.progress_bar.setRange(self.frame_index, self.total_frames)
         self.progress_bar.show()
         label = self.label_widget.render.label
         self.new_cell_id_for_track = np.amax(label) + 1
         save_label(self.hdfpath, self.fov, self.frame_index, label)
-        for i in range(self.frame_index+1, self.num_frames):
+        for i in range(self.frame_index + 1, self.total_frames):
             self.progress_bar.setValue(i)
             self.track(self.fov, i)
         label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
@@ -576,14 +651,14 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         label_list = []
         file, _ = QFileDialog.getSaveFileName(self, "Save csv", ".\\", "csv file (*.csv)")
         if file:
-            self.save_data_path = file
+            self.data_export_path = file
         else:
-            self.save_data_path = get_default_path(self.nd2filepath, ".csv")
+            self.data_export_path = get_default_path(self.nd2filepath, ".csv")
 
         file = h5py.File(self.hdfpath, "r")
 
-        self.progress_bar.setRange(0, self.num_frames)
-        for frame in range(self.num_frames):
+        self.progress_bar.setRange(0, self.total_frames)
+        for frame in range(self.total_frames):
             self.progress_bar.setValue(frame)
             if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
                 label = file[f"/fov_{self.fov}/frame_{frame}"][:]
@@ -605,8 +680,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                     "Length major": prop.axis_major_length,
                     "Length minor": prop.axis_minor_length,
                 }
-                for i, name in enumerate(self.images.metadata["channels"]):
-                    fl_img = self.images.get_frame_2D(c=i, t=frame, v=self.fov)
+                for i, name in enumerate(self.channel_names):
+                    fl_img = self.get_image_2d(i, frame, self.fov)
                     ix = prop.coords[:, 0]
                     iy = prop.coords[:, 1]
                     fl_values = fl_img[ix, iy]
@@ -618,13 +693,15 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         file.close()
         df = pd.DataFrame(label_list)
         df = df.sort_values(["Label", "Time"])
-        df.to_csv(self.save_data_path, index=False)
+        df.to_csv(self.data_export_path, index=False)
 
     def export_movie(self):
         # TODO: export overlay image as movie, use skimage gray2rgb
         pass
 
     def import_dir_data(self, data, start_time, time_interval):
+        # TODO: implement reading data from directories and other formats
+        return
         self.images = data
         self.time_steps.append(start_time)
         for i in range(len(self.images)):
@@ -645,7 +722,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.lineEditEndTime.setText(f"{self.time_steps[-1]}")
 
     def play(self):
-        if self.images is None:
+        if not self.nd2filepaths:
             return
         elif self.buttonPlay.text() == "Play":
             self.buttonPlay.setText("Stop")
@@ -718,14 +795,14 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_table.removeRow(row)
 
     def jump_to_next_frame(self):
-        if self.frame_index == self.num_frames - 1:
+        if self.frame_index == self.total_frames - 1:
             self.jump_to_frame(0)
         else:
             self.jump_to_frame(self.frame_index + 1)
 
     def jump_to_previous_frame(self):
         if self.frame_index == 0:
-            self.jump_to_frame(self.num_frames - 1)
+            self.jump_to_frame(self.total_frames - 1)
         else:
             self.jump_to_frame(self.frame_index - 1)
 
@@ -736,11 +813,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         default_img = np.zeros(self.image_shape, dtype=np.uint16)
         if self.frame_index > 0:
-            self.view_widget_left.set_image(self.images[self.frame_index - 1])
+            image = self.get_image(self.frame_index - 1)
+            self.view_widget_left.set_image(image)
         else:
             self.view_widget_left.set_image(default_img)
-        if self.frame_index < self.num_frames - 1:
-            self.view_widget_right.set_image(self.images[self.frame_index + 1])
+        if self.frame_index < self.total_frames - 1:
+            image = self.get_image(self.frame_index + 1)
+            self.view_widget_right.set_image(image)
         else:
             self.view_widget_right.set_image(default_img)
 
@@ -752,7 +831,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         else:
             self.view_widget_left.set_label(llb)
         rlb = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index + 1)
-        if rlb is None or self.frame_index == self.num_frames - 1:
+        if rlb is None or self.frame_index == self.total_frames - 1:
             self.view_widget_right.set_label(default_lb)
         else:
             self.view_widget_right.set_label(rlb)
@@ -761,9 +840,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         Jump to frame, and update widgets accordingly. 
         """
-        if self.images is None:
+        if not self.nd2filepaths:
             return
-        elif 0 <= index < self.num_frames:
+        elif 0 <= index < self.total_frames:
             # save label when jump to another frame
             self.save_current_label()
             # jump and update widgets
@@ -771,7 +850,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.pixmap_scale = self.label_widget.scale
             self.brush_size = self.label_widget.brush_size
             self.viewSlider.setValue(index)
-            self.label_widget.set_image(self.images[index])
+            image = self.get_image(index)
+            self.label_widget.set_image(image)
             self.set_view_images()
             label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
             if label is None:
@@ -786,7 +866,6 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_widget.show_image()
             t = self.time_steps[index] / 60000
             self.lineEditCurrentTime.setText(f"{t : .2f}")
-            self.viewSlider.setValue(index)
 
     def label_table_select(self):
         """
@@ -883,7 +962,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         label = self.label_widget.render.label
         mask = self.copied_label > 0
-        if mask.size == 0:
+        if self.copied_label[mask].size == 0:
             return
         # check if the copied label values is already in the current label
         lv = np.amax(self.copied_label[mask])
@@ -938,4 +1017,5 @@ if __name__ == "__main__":
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     win = LabelWindow()
+    win.showMaximized()
     sys.exit(app.exec())
