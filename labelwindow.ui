@@ -6,9 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2493</width>
-    <height>1368</height>
+    <width>2540</width>
+    <height>1373</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>2540</width>
+    <height>1373</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>2540</width>
+    <height>1373</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Dynamics</string>
@@ -860,6 +878,19 @@ color:rgb(255, 255, 255)</string>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
             <item alignment="Qt::AlignLeft">
              <widget class="ViewWidget" name="view_widget_left" native="true">
               <property name="sizePolicy">
@@ -923,6 +954,19 @@ color:rgb(255, 255, 255)</string>
               </property>
              </widget>
             </item>
+            <item>
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </item>
           <item>
@@ -951,6 +995,18 @@ color:rgb(255, 255, 255)</string>
               </item>
               <item>
                <widget class="QPushButton" name="buttonFirstFrame">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>100</width>
+                  <height>30</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string/>
                 </property>
@@ -962,6 +1018,12 @@ color:rgb(255, 255, 255)</string>
               </item>
               <item>
                <widget class="QPushButton" name="buttonPreviousFrame">
+                <property name="minimumSize">
+                 <size>
+                  <width>100</width>
+                  <height>30</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string/>
                 </property>
@@ -973,6 +1035,12 @@ color:rgb(255, 255, 255)</string>
               </item>
               <item>
                <widget class="QPushButton" name="buttonPlay">
+                <property name="minimumSize">
+                 <size>
+                  <width>100</width>
+                  <height>30</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string/>
                 </property>
@@ -984,6 +1052,12 @@ color:rgb(255, 255, 255)</string>
               </item>
               <item>
                <widget class="QPushButton" name="buttonNextFrame">
+                <property name="minimumSize">
+                 <size>
+                  <width>100</width>
+                  <height>30</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string/>
                 </property>
@@ -995,6 +1069,12 @@ color:rgb(255, 255, 255)</string>
               </item>
               <item>
                <widget class="QPushButton" name="buttonLastFrame">
+                <property name="minimumSize">
+                 <size>
+                  <width>100</width>
+                  <height>30</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string/>
                 </property>
@@ -1132,7 +1212,7 @@ color:rgb(255, 255, 255)</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>2493</width>
+     <width>2540</width>
      <height>22</height>
     </rect>
    </property>
@@ -1193,20 +1273,16 @@ color:rgb(255, 255, 255)</string>
      <property name="title">
       <string>Train model</string>
      </property>
-     <addaction name="actionUNet"/>
     </widget>
     <widget class="QMenu" name="menuFine_Tune_model">
      <property name="title">
       <string>Fine Tune model</string>
      </property>
-     <addaction name="actionU_Net_2"/>
     </widget>
     <widget class="QMenu" name="menuClick_label">
      <property name="title">
       <string>Click label</string>
      </property>
-     <addaction name="actionLoad_model"/>
-     <addaction name="actionSet_segment_box_size"/>
     </widget>
     <addaction name="menuChose_model"/>
     <addaction name="menuTrain_model"/>
@@ -1234,8 +1310,7 @@ color:rgb(255, 255, 255)</string>
    </attribute>
    <addaction name="actionOpen_nd2"/>
    <addaction name="actionAppend_nd2"/>
-   <addaction name="actionLoad_model"/>
-   <addaction name="actionSet_segment_box_size"/>
+   <addaction name="actionU_Net_segment"/>
    <addaction name="actionRetrack_from_first"/>
    <addaction name="actionRetrack_from_current"/>
    <addaction name="actionExport"/>
@@ -1385,11 +1460,6 @@ color:rgb(255, 255, 255)</string>
     <string>Segment</string>
    </property>
   </action>
-  <action name="actionLoad_weights">
-   <property name="text">
-    <string>Load weights</string>
-   </property>
-  </action>
   <action name="actionTrack">
    <property name="text">
     <string>Track</string>
@@ -1436,16 +1506,10 @@ color:rgb(255, 255, 255)</string>
    </property>
   </action>
   <action name="actionU_Net_segment">
-   <property name="text">
-    <string>U-Net</string>
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/my-segment.png</normaloff>../icons/32x32/actions/my-segment.png</iconset>
    </property>
-  </action>
-  <action name="actionUNet">
-   <property name="text">
-    <string>U-Net</string>
-   </property>
-  </action>
-  <action name="actionU_Net_2">
    <property name="text">
     <string>U-Net</string>
    </property>
@@ -1473,24 +1537,6 @@ color:rgb(255, 255, 255)</string>
   <action name="actionTurn_off_penetrate_mode">
    <property name="text">
     <string>Turn off penetrate mode</string>
-   </property>
-  </action>
-  <action name="actionLoad_model">
-   <property name="icon">
-    <iconset>
-     <normaloff>../icons/32x32/actions/go-jump.png</normaloff>../icons/32x32/actions/go-jump.png</iconset>
-   </property>
-   <property name="text">
-    <string>Load model</string>
-   </property>
-  </action>
-  <action name="actionSet_segment_box_size">
-   <property name="icon">
-    <iconset>
-     <normaloff>../icons/32x32/actions/view-fullscreen.png</normaloff>../icons/32x32/actions/view-fullscreen.png</iconset>
-   </property>
-   <property name="text">
-    <string>Set segment box size</string>
    </property>
   </action>
   <action name="actionAppend_nd2">

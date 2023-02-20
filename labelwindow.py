@@ -3,7 +3,8 @@ import sys
 import numpy as np
 import pandas as pd
 import skimage.morphology
-from skimage.measure import regionprops
+import skimage.measure
+import moviepy.editor
 import h5py
 from nd2reader import ND2Reader
 from yeaz import hungarian as hu
@@ -12,7 +13,7 @@ from PyQt5.QtCore import QCoreApplication, QObject, QTimer, Qt, QThreadPool, pyq
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QMenu, QHeaderView, QMessageBox, QStyle, \
     QAbstractItemView, QFileDialog, QPushButton, QTableWidgetItem, QProgressBar
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QIcon, QPalette, QBrush
-from base import get_label_color, save_label, get_default_path, get_label_from_hdf
+from base import get_label_color, save_label, get_default_path, get_label_from_hdf, get_seg_result_from_hdf, colorize
 from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
 from unetdialog import UNetDialog
@@ -173,8 +174,6 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.import_dialog = ImportDialog(None)
         self.import_dialog.data_loaded.connect(self.import_dir_data)
 
-        self.show()
-
         # track
         self.new_cell_id_for_track = 0
 
@@ -183,6 +182,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.progress_bar.setValue(0)
         self.statusbar.addWidget(self.progress_bar)
         self.progress_bar.hide()
+
+        # toolbar
+        self.toolBar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def get_image(self, overall_frame_index):
         sum_frames = 0
@@ -198,8 +200,6 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
     def get_image_2d(self, channel, frame, fov):
         sum_frames = 0
-        data = 0  # data read from nd2 file
-        idx = 0  # image index
         for i, n in enumerate(self.num_frames_list):
             if frame < sum_frames + n:
                 idx = frame - sum_frames
@@ -207,11 +207,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                     images.default_coords["v"] = fov
                     images.default_coords["c"] = channel
                     return images[idx]
+            else:
+                sum_frames += n
 
     def segment_with_unet(self):
-        unet_dialog = UNetDialog(frames=self.total_frames, fovs=self.num_fov)
+        unet_dialog = UNetDialog(frames=self.total_frames, n_fov=self.num_fov)
         unet_dialog.set_channel(self.channel)
-        unet_dialog.set_images(self.images) # TODO: images should be changed to nd2 file list
+        unet_dialog.set_nd2files(self.nd2filepaths, self.num_frames_list)
         unet_dialog.set_hdf_path(self.hdfpath)
         unet_dialog.finished.connect(self.update_label_display)
         unet_dialog.exec()
@@ -666,7 +668,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 label = None
             if label is None or np.amax(label) == 0:
                 continue
-            regions = regionprops(label_image=label)
+            regions = skimage.measure.regionprops(label_image=label)
             for prop in regions:
                 x, y = prop.centroid
                 stats = {
@@ -697,6 +699,27 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
     def export_movie(self):
         # TODO: export overlay image as movie, use skimage gray2rgb
+        # export movie of pictures of current channel and fov
+        # labels are turned into rgb
+        def make_frame(t):
+            hue_rotations = np.linspace(0, 1, 10)
+            color_image = np.zeros(self.image_shape)
+            if t < self.total_frames:
+                image = self.get_image(t)
+                label = get_label_from_hdf(self.hdfpath, self.fov, t)
+                color_image = image.copy()
+                for lv, hue in zip(np.unique(label), hue_rotations):
+                    if lv == 0:
+                        continue
+                    else:
+                        pos = label == lv
+                        color_image[pos] = colorize(color_image[pos], hue, saturation=0.3)
+            return color_image
+        animation = moviepy.editor.VideoClip(make_frame, duration=1)
+        animation.write_videofile("time-lapse.mp4", fps=24)
+        # animation.write_gif("time-lapse.gif", fps=24)
+
+
         pass
 
     def import_dir_data(self, data, start_time, time_interval):
@@ -734,20 +757,33 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.timer.stop()
 
     def select_label_at_mouse(self, x, y):
+        # if current label is 0 at mouse position
+        # select label from unet segmentation results
         label = self.label_widget.render.label
         lv = label[x, y]
-        items = self.label_table.findItems(f"{lv}", Qt.MatchExactly)
-        if len(items) > 0:
-            item = items[0]
-            row = item.row()
-            self.label_table_index = row
-            c = get_label_color(lv)
-            self.label_table.setStyleSheet(f"selection-background-color: {c}")
-            self.label_table.selectRow(row)
-            self.label_table.verticalScrollBar().setSliderPosition(row)
+        if lv == 0:
+            lb = get_seg_result_from_hdf(self.hdfpath, self.fov, self.frame_index)
+            if lb is not None:
+                lv = lb[x, y]
+                pos = lb == lv
+                self.add_new_label()
+                label[pos] = self.label_value
+                self.label_widget.set_label(label)
+        else:
+            items = self.label_table.findItems(f"{lv}", Qt.MatchExactly)
+            if len(items) > 0:
+                item = items[0]
+                row = item.row()
+                self.label_table_index = row
+                c = get_label_color(lv)
+                self.label_table.setStyleSheet(f"selection-background-color: {c}")
+                self.label_table.selectRow(row)
+                self.label_table.verticalScrollBar().setSliderPosition(row)
 
     def zoom_view_widget(self, p: QPointF):
-        p = p / 600 * 512
+        a = self.label_widget.height()
+        b = self.view_widget_left.height()
+        p = p / a * b
         self.view_widget_left.zoom_point = p
         self.view_widget_right.zoom_point = p
         self.view_widget_left.zoom(self.label_widget.scale)
@@ -757,7 +793,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         If label value at mouse is not 0, 
         change to the value and color of the label value.
-        Otherwise a new label is generated.
+        Otherwise, a new label is generated.
         """
         label = self.label_widget.render.label
         lv = label[x, y]
@@ -779,20 +815,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         Delete all pixels having the label value at mouse holding.
         """
         label = self.label_widget.render.label
-        lv = label[x, y]
-        if lv == 0:
-            return
-        # remove label id in label
-        lb = self.label_widget.render.label
-        lb[lb == lv] = 0
-        self.label_widget.set_label(lb)
-        # find index of lv in label table
-        # remove row corresponds to lv
-        items = self.label_table.findItems(f"{lv}", Qt.MatchExactly)
-        if len(items) > 0:
-            item = items[0]
-            row = item.row()
-            self.label_table.removeRow(row)
+        connect_labels = skimage.measure.label(label)
+        pos = connect_labels == connect_labels[x, y]
+        label[pos] = 0
+        self.label_widget.set_label(label)
+        # reconstruct label table, for deleting connected region does not ensure deleting every label part
+        self.generate_label_table_from_label(label)
 
     def jump_to_next_frame(self):
         if self.frame_index == self.total_frames - 1:
@@ -1017,5 +1045,5 @@ if __name__ == "__main__":
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     win = LabelWindow()
-    win.showMaximized()
+    win.show()
     sys.exit(app.exec())

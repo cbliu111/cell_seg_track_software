@@ -1,5 +1,6 @@
 import sys
 from skimage.measure import regionprops
+import skimage.color
 import numpy as np
 import h5py
 from PyQt5.QtGui import qRgb, QColor, QImage
@@ -20,6 +21,18 @@ def get_label_color(lv):
 
 COLOR_TABLE = [QColor(i).rgb() for i in DEFAULT_COLORS] * 30
 COLOR_TABLE = [qRgb(0, 0, 0)] + COLOR_TABLE
+
+
+def colorize(image, hue, saturation=1):
+    """ Add color of the given hue to an RGB image.
+
+    By default, set the saturation to 1 so that the colors pop!
+    """
+    color = skimage.color.gray2rgb(image)
+    hsv = skimage.color.rgb2hsv(color)
+    hsv[:, :, 1] = saturation
+    hsv[:, :, 0] = hue
+    return skimage.color.hsv2rgb(hsv)
 
 
 def numpy_to_image(m: np.ndarray, fmt: QImage.Format):
@@ -65,6 +78,25 @@ def save_label(hdfpath, fov, frame, label):
     file.close()
 
 
+def save_unet_seg_result(hdfpath, fov, frame, label):
+    """
+    Save label at unet/field of view (fov)/frame (frame) in the h5py file (hdfpath).
+    h5 file now has unet group and group fov_i and dataset frame_i.
+    Labels are np.uint16 then scaled to 255, chosen to be easily converted to RGB color map.
+    """
+    file = h5py.File(hdfpath, "r+")
+    if "/unet" not in file:
+        file.create_group("/unet")
+    if f"/unet/fov_{fov}" not in file["/unet"]:
+        file.create_group(f"/unet/fov_{fov}")
+    if f"frame_{frame}" in file[f"/unet/fov_{fov}"]:
+        dataset = file[f"/unet/fov_{fov}/frame_{frame}"]
+        dataset[:] = label.astype(np.uint16)
+    else:
+        file.create_dataset(f"/unet/fov_{fov}/frame_{frame}", data=label.astype(np.uint16), compression="gzip")
+    file.close()
+
+
 def get_default_path(nd2filepath, post: str):
     """
     Generate default file path from the input nd2filepath.
@@ -79,6 +111,7 @@ def get_default_path(nd2filepath, post: str):
     hdf_name = temp_list[-1].split('.')[-2]
     return tmp + hdf_name + post
 
+
 def get_label_from_hdf(hdfpath, fov, frame) -> np.ndarray:
     """
     Get the label for current frame and current fov.
@@ -88,6 +121,21 @@ def get_label_from_hdf(hdfpath, fov, frame) -> np.ndarray:
     file = h5py.File(hdfpath, "r")
     if f"frame_{frame}" in file[f"/fov_{fov}"]:
         label = file[f"/fov_{fov}/frame_{frame}"][:]
+    else:
+        label = None
+    file.close()
+    return label
+
+
+def get_seg_result_from_hdf(hdfpath, fov, frame) -> np.ndarray:
+    """
+    Get the label for current frame and current fov.
+    Return None if label is not found in the hdf file.
+    """
+    # fov and time are stored as fov group and frame dataset as /fov_i/frame_j
+    file = h5py.File(hdfpath, "r")
+    if f"frame_{frame}" in file[f"/unet/fov_{fov}"]:
+        label = file[f"/unet/fov_{fov}/frame_{frame}"][:]
     else:
         label = None
     file.close()

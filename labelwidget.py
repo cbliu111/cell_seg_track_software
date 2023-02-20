@@ -131,6 +131,7 @@ class LabelWidget(QWidget):
             Qt.Key_V: self.paste_id,
             Qt.Key_X: self.delete_id,
             Qt.Key_S: self.select_id,
+            # Q, W, R, T
         }
         # define render
         self.render = ImageRender()
