@@ -6,12 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="473e4a69-526f-491e-9e55-49d1a1881564" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/base.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/labelwidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwidget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/labelwindow.ui" beforeDir="false" afterPath="$PROJECT_DIR$/labelwindow.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui_labelwindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui_labelwindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unetdialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/unetdialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,14 +37,14 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "/home/cbliu/Documents/microscopic_software/code",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/cbliu/Documents/microscopic_software/code&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\CBL\Documents\pyqt_installation\Dynamics" />
@@ -148,5 +143,16 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base.py</url>
+          <line>30</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

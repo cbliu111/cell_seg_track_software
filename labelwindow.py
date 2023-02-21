@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import skimage.morphology
 import skimage.measure
+import skimage.color
 import moviepy.editor
 import h5py
 from nd2reader import ND2Reader
@@ -698,29 +699,41 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         df.to_csv(self.data_export_path, index=False)
 
     def export_movie(self):
-        # TODO: export overlay image as movie, use skimage gray2rgb
         # export movie of pictures of current channel and fov
         # labels are turned into rgb
+        file, _ = QFileDialog.getSaveFileName(self, "Save movie", ".\\", "mp4 file (*.mp4)")
+        if not file:
+            return
+
         def make_frame(t):
+            t = int(t * 2)
             hue_rotations = np.linspace(0, 1, 10)
             color_image = np.zeros(self.image_shape)
             if t < self.total_frames:
                 image = self.get_image(t)
                 label = get_label_from_hdf(self.hdfpath, self.fov, t)
+                if label is None:
+                    return
                 color_image = image.copy()
+                color_image = skimage.color.gray2rgb(color_image)
                 for lv, hue in zip(np.unique(label), hue_rotations):
                     if lv == 0:
                         continue
                     else:
-                        pos = label == lv
-                        color_image[pos] = colorize(color_image[pos], hue, saturation=0.3)
-            return color_image
-        animation = moviepy.editor.VideoClip(make_frame, duration=1)
-        animation.write_videofile("time-lapse.mp4", fps=24)
+                        q_color = QColor(get_label_color(lv))
+                        r = q_color.red()
+                        g = q_color.green()
+                        b = q_color.blue()
+                        multiplier = np.array([r, g, b]) / 255
+                        color_image[label == lv] *= multiplier.astype("uint16")
+
+            color_image = color_image / np.amax(color_image) * 255
+            return color_image.astype("int8")
+
+        animation = moviepy.editor.VideoClip(make_frame, duration=self.total_frames / 2)
+        animation.write_videofile(file, fps=2)
+        QMessageBox.information(self, "Info", "Movie ready.", QMessageBox.Ok, QMessageBox.Ok)
         # animation.write_gif("time-lapse.gif", fps=24)
-
-
-        pass
 
     def import_dir_data(self, data, start_time, time_interval):
         # TODO: implement reading data from directories and other formats
