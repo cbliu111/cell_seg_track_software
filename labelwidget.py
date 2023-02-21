@@ -30,6 +30,8 @@ class LabelWidgetSignals(QObject):
     draw_at_mouse_position = Signal(int, int)
     send_zoom_point = Signal(QPointF)
     send_penatrate_mask = Signal(np.ndarray)
+    undo = Signal()
+    redo = Signal()
 
 
 class LabelWidget(QWidget):
@@ -131,6 +133,8 @@ class LabelWidget(QWidget):
             Qt.Key_V: self.paste_id,
             Qt.Key_X: self.delete_id,
             Qt.Key_S: self.select_id,
+            Qt.Key_Q: self.signal_undo,
+            Qt.Key_R: self.signal_redo,
             # Q, W, R, T
         }
         # define render
@@ -331,6 +335,12 @@ class LabelWidget(QWidget):
     def select_id(self):
         x, y = self.get_image_position_from_mouse()
         self.signals.select_id_at_mouse_position.emit(x, y)
+
+    def signal_undo(self):
+        self.signals.undo.emit()
+
+    def signal_redo(self):
+        self.signals.redo.emit()
 
     def map_from_screen(self, p: QPointF):
         """

@@ -51,7 +51,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.channel = 0
         # fov and time are stored as fov_i and frame_i
         # save labels for undo and redo
-        self.saved_labels = None
+        self.undo_list = []
+        self.redo_list = []
+
         # copied label for paste
         self.copied_label = None
         self.selected_label = []
@@ -132,6 +134,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.signals.draw_at_mouse_position.connect(self.draw_at_mouse)
         self.label_widget.signals.send_zoom_point.connect(self.zoom_view_widget)
         self.label_widget.signals.send_penatrate_mask.connect(self.draw_on_all_labels)
+        self.label_widget.signals.undo.connect(self.undo)
+        self.label_widget.signals.redo.connect(self.redo)
         self.pixmap_scale = 1
         self.brush_size = 50
 
@@ -321,13 +325,33 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_label_value(self.label_value)
         self.generate_label_table_from_label(label)
 
+    # undo only work for paste and select
+    def collect_label_for_undo(self, label):
+        self.undo_list.append(label.copy())
+        if len(self.undo_list) > 3:
+            self.undo_list.pop(0)
+
     def undo(self):
-        # TODO:
-        pass
+        if len(self.undo_list) == 0:
+            return
+        label = self.undo_list.pop(-1)
+        lb = self.label_widget.render.label
+        self.redo_list.append(lb)
+        if len(self.redo_list) > 3:
+            self.redo_list.pop(0)
+        self.label_widget.set_label(label)
+        self.generate_label_table_from_label(label)
 
     def redo(self):
-        # TODO:
-        pass
+        if len(self.redo_list) == 0:
+            return
+        label = self.redo_list.pop(-1)
+        lb = self.label_widget.render.label
+        self.undo_list.append(lb)
+        if len(self.undo_list) > 3:
+            self.undo_list.pop(0)
+        self.label_widget.set_label(label)
+        self.generate_label_table_from_label(label)
 
     def show_overlay(self):
         # TODO:
@@ -371,11 +395,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.draw_mode = "draw"
         self.label_widget.set_draw()
         self.label_value = self.label_widget.label_value
+        label = self.label_widget.render.label
 
     def set_erase(self):
         self.draw_mode = "erase"
         self.label_widget.set_erase()
         self.label_value = self.label_widget.label_value
+        label = self.label_widget.render.label
 
     def set_brush_size(self, value):
         self.brush_size = value
@@ -397,6 +423,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_label(label)
         self.set_view_labels()
         self.update_label_display()
+        # clear undo and redo list
+        self.undo_list.clear()
+        self.redo_list.clear()
 
     def create_hdf(self):
         """
@@ -778,17 +807,36 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # if current label is 0 at mouse position
         # select label from unet segmentation results
         label = self.label_widget.render.label
+        self.collect_label_for_undo(label)
         lv = label[x, y]
+        pos = None
         if lv == 0:
-            lb = get_seg_result_from_hdf(self.hdfpath, self.fov, self.frame_index)
-            if lb is not None:
-                lv = lb[x, y]
-                if lv == 0:
-                    return
-                pos = lb == lv
-                self.add_new_label()
-                label[pos] = self.label_value
-                self.label_widget.set_label(label)
+            # find correct label from segment result or from previous label
+            # compare area between seg result and previous label
+            # if the previous label has area larger than 1.2 times seg result
+            # use the previous label
+            # otherwise use seg result
+            seg = get_seg_result_from_hdf(self.hdfpath, self.fov, self.frame_index)
+            lb = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index-1)
+            if seg is None or seg[x, y] == 0:
+                if lb is not None and lb[x, y] > 0:
+                    pos = lb == lb[x, y]
+            elif lb is None or lb[x, y] == 0:
+                if seg is not None and seg[x, y] > 0:
+                    pos = seg == seg[x, y]
+            else:
+                pos_lb = lb == lb[x, y]
+                pos_seg = seg == seg[x, y]
+                if lb[pos_lb].size > seg[pos_seg].size * 1.2:
+                    pos = pos_lb
+                else:
+                    pos = pos_seg
+            if pos is None:
+                return
+            self.add_new_label()
+            label[pos] = self.label_value
+            self.label_widget.set_label(label)
+
         else:
             items = self.label_table.findItems(f"{lv}", Qt.MatchExactly)
             if len(items) > 0:
@@ -1010,6 +1058,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         not exists in current frame.
         """
         label = self.label_widget.render.label
+        self.collect_label_for_undo(label)
         mask = self.copied_label > 0
         if self.copied_label[mask].size == 0:
             return
