@@ -5,6 +5,8 @@ import pandas as pd
 import skimage.morphology
 import skimage.measure
 import skimage.color
+import skimage.exposure
+from skimage import img_as_float
 import moviepy.editor
 import h5py
 from nd2reader import ND2Reader
@@ -714,8 +716,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 label = get_label_from_hdf(self.hdfpath, self.fov, t)
                 if label is None:
                     return
-                color_image = image.copy()
-                color_image = skimage.color.gray2rgb(color_image)
+                gray_image = img_as_float(image)
+                color_image = skimage.color.gray2rgb(gray_image)
                 for lv, hue in zip(np.unique(label), hue_rotations):
                     if lv == 0:
                         continue
@@ -724,11 +726,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                         r = q_color.red()
                         g = q_color.green()
                         b = q_color.blue()
-                        multiplier = np.array([r, g, b]) / 255 * 0.3
-                        color_image[label == lv] *= multiplier.astype("uint16")
+                        multiplier = np.array([r, g, b]) / 255
+                        color_image[label == lv] *= multiplier
 
-            color_image = color_image / np.amax(color_image) * 255
-            return color_image.astype("int8")
+            low = 0.3 * 255
+            high = 0.9 * 255
+            img = skimage.exposure.rescale_intensity(color_image, out_range=(low, high))
+            return img
 
         animation = moviepy.editor.VideoClip(make_frame, duration=self.total_frames / 2)
         animation.write_videofile(file, fps=2)
@@ -778,6 +782,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             lb = get_seg_result_from_hdf(self.hdfpath, self.fov, self.frame_index)
             if lb is not None:
                 lv = lb[x, y]
+                if lv == 0:
+                    return
                 pos = lb == lv
                 self.add_new_label()
                 label[pos] = self.label_value

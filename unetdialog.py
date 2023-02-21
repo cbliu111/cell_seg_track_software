@@ -37,7 +37,7 @@ class UNetDialog(QDialog, Ui_Dialog):
 
         self.frame_range_label.setText(f"Frame range (0-{frames})")
         self.start_frame_line.setText("0")
-        self.end_frame_line.setText(f"{frames - 1}")
+        self.end_frame_line.setText(f"{frames}")
         self.progressBar.setValue(0)
         self.progressBar.hide()
         self.start_run_button.clicked.connect(self.start_run)
