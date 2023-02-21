@@ -567,16 +567,19 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
             # obtain metadata, see if match
             if self.num_fov != images.sizes["v"]:
-                QMessageBox.critical(self, "Error", "Number of field of views does not match.", QMessageBox.Ok, QMessageBox.Ok)
+                QMessageBox.critical(self, "Error", "Number of field of views does not match.", QMessageBox.Ok,
+                                     QMessageBox.Ok)
                 return
             elif self.num_channels != images.sizes["c"]:
-                QMessageBox.critical(self, "Error", "Number of channels does not match.", QMessageBox.Ok, QMessageBox.Ok)
+                QMessageBox.critical(self, "Error", "Number of channels does not match.", QMessageBox.Ok,
+                                     QMessageBox.Ok)
                 return
             elif self.channel_names != images.metadata["channels"]:
                 QMessageBox.critical(self, "Error", "Channel names do not match.", QMessageBox.Ok, QMessageBox.Ok)
                 return
             elif self.image_shape != (images.sizes["x"], images.sizes["y"]):
-                QMessageBox.critical(self, "Error", "Image width or height does not match.", QMessageBox.Ok, QMessageBox.Ok)
+                QMessageBox.critical(self, "Error", "Image width or height does not match.", QMessageBox.Ok,
+                                     QMessageBox.Ok)
                 return
 
             # obtain frames in each nd2 file
@@ -736,8 +739,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         if not file:
             return
 
+        self.progress_bar.setMaximum(self.total_frames)
+        self.progress_bar.show()
+
         def make_frame(t):
             t = int(t * 4)
+            self.progress_bar.setValue(t)
             color_image = np.zeros(self.image_shape)
             if t < self.total_frames:
                 image = self.get_image(t)
@@ -766,6 +773,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         animation = moviepy.editor.VideoClip(make_frame, duration=self.total_frames / 4)
         animation.write_videofile(file, fps=4)
+        self.progress_bar.hide()
         QMessageBox.information(self, "Info", "Movie ready.", QMessageBox.Ok, QMessageBox.Ok)
         # animation.write_gif("time-lapse.gif", fps=24)
 
@@ -817,7 +825,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             # use the previous label
             # otherwise use seg result
             seg = get_seg_result_from_hdf(self.hdfpath, self.fov, self.frame_index)
-            lb = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index-1)
+            lb = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index - 1)
             if seg is None or seg[x, y] == 0:
                 if lb is not None and lb[x, y] > 0:
                     pos = lb == lb[x, y]
