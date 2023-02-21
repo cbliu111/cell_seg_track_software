@@ -1257,7 +1257,7 @@ color:rgb(255, 255, 255)</string>
      <string>Help</string>
     </property>
     <addaction name="actionVersion"/>
-    <addaction name="actionShortcuts"/>
+    <addaction name="actionManual"/>
    </widget>
    <widget class="QMenu" name="menuDNN">
     <property name="title">
@@ -1315,6 +1315,7 @@ color:rgb(255, 255, 255)</string>
    <addaction name="actionRetrack_from_current"/>
    <addaction name="actionExport"/>
    <addaction name="actionExport_movie"/>
+   <addaction name="actionManual"/>
   </widget>
   <action name="actionOpen_nd2">
    <property name="icon">
@@ -1366,9 +1367,13 @@ color:rgb(255, 255, 255)</string>
     <string>Version</string>
    </property>
   </action>
-  <action name="actionShortcuts">
+  <action name="actionManual">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/mimetypes/text-x-generic.png</normaloff>../icons/32x32/mimetypes/text-x-generic.png</iconset>
+   </property>
    <property name="text">
-    <string>Shortcuts</string>
+    <string>Manual</string>
    </property>
   </action>
   <action name="actionBrush_size">

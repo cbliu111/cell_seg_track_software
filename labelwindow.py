@@ -536,16 +536,16 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
             # obtain metadata, see if match
             if self.num_fov != images.sizes["v"]:
-                QMessageBox.critical(self, "Number of field of views does not match.")
+                QMessageBox.critical(self, "Error", "Number of field of views does not match.", QMessageBox.Ok, QMessageBox.Ok)
                 return
             elif self.num_channels != images.sizes["c"]:
-                QMessageBox.critical(self, "Number of channels does not match.")
+                QMessageBox.critical(self, "Error", "Number of channels does not match.", QMessageBox.Ok, QMessageBox.Ok)
                 return
             elif self.channel_names != images.metadata["channels"]:
-                QMessageBox.critical(self, "Channel names do not match.")
+                QMessageBox.critical(self, "Error", "Channel names do not match.", QMessageBox.Ok, QMessageBox.Ok)
                 return
             elif self.image_shape != (images.sizes["x"], images.sizes["y"]):
-                QMessageBox.critical(self, "Image width or height does not match.")
+                QMessageBox.critical(self, "Error", "Image width or height does not match.", QMessageBox.Ok, QMessageBox.Ok)
                 return
 
             # obtain frames in each nd2 file

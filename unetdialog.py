@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import h5py
 from nd2reader import ND2Reader
-from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QAbstractItemView, QPushButton, QDialogButtonBox
+from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QAbstractItemView, QPushButton, QDialogButtonBox, QMessageBox
 from PyQt5.QtCore import pyqtSignal as Signal
 from ui_unet import Ui_Dialog
 import skimage.exposure
@@ -88,6 +88,7 @@ class UNetDialog(QDialog, Ui_Dialog):
 
     def start_run(self):
         if not self.nd2files:
+            QMessageBox.critical(self, "Warning", "No image data.", QMessageBox.Ok, QMessageBox.Ok)
             return
         # collect all frame and fov names
         self.frame_list = []
@@ -114,13 +115,16 @@ class UNetDialog(QDialog, Ui_Dialog):
 
         # get weight, return otherwise
         if self.weight_path is None:
+            QMessageBox.critical(self, "Warning", "Please select weight file.", QMessageBox.Ok, QMessageBox.Ok)
             return
 
         # get channel, return if not
         if self.channel is None:
+            QMessageBox.critical(self, "Warning", "No channel assigned.", QMessageBox.Ok, QMessageBox.Ok)
             return
 
         if not self.num_frames_list:
+            QMessageBox.critical(self, "Warning", "Number of frames not assigned.", QMessageBox.Ok, QMessageBox.Ok)
             return
 
         # setup model
