@@ -1314,6 +1314,7 @@ color:rgb(255, 255, 255)</string>
    <addaction name="actionRetrack_from_first"/>
    <addaction name="actionRetrack_from_current"/>
    <addaction name="actionExport"/>
+   <addaction name="actionExport_movie"/>
   </widget>
   <action name="actionOpen_nd2">
    <property name="icon">
@@ -1438,6 +1439,10 @@ color:rgb(255, 255, 255)</string>
    </property>
   </action>
   <action name="actionExport_movie">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/mimetypes/video-x-generic.png</normaloff>../icons/32x32/mimetypes/video-x-generic.png</iconset>
+   </property>
    <property name="text">
     <string>Export movie</string>
    </property>
