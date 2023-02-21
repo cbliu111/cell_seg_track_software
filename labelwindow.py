@@ -724,7 +724,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                         r = q_color.red()
                         g = q_color.green()
                         b = q_color.blue()
-                        multiplier = np.array([r, g, b]) / 255
+                        multiplier = np.array([r, g, b]) / 255 * 0.3
                         color_image[label == lv] *= multiplier.astype("uint16")
 
             color_image = color_image / np.amax(color_image) * 255
@@ -829,8 +829,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         label = self.label_widget.render.label
         connect_labels = skimage.measure.label(label)
-        pos = connect_labels == connect_labels[x, y]
-        label[pos] = 0
+        a = connect_labels == connect_labels[x, y]
+        b = label == label[x, y]
+        label[a & b] = 0
         self.label_widget.set_label(label)
         # reconstruct label table, for deleting connected region does not ensure deleting every label part
         self.generate_label_table_from_label(label)
