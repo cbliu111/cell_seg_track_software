@@ -3,3 +3,6 @@
 *.tif
 *.jpg
 *.png
+.idea/
+__pycache__
+test/
