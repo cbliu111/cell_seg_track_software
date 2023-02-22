@@ -137,6 +137,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.signals.send_penatrate_mask.connect(self.draw_on_all_labels)
         self.label_widget.signals.undo.connect(self.undo)
         self.label_widget.signals.redo.connect(self.redo)
+        self.label_widget.signals.change_channel.connect(self.switch_channel)
         self.pixmap_scale = 1
         self.brush_size = 50
 
@@ -160,6 +161,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         # time label
         self.lineEditStartTime.setText("0")
+        self.lineEdit_current_frame.setText("0")
         self.lineEditCurrentTime.setText("0")
         self.lineEditEndTime.setText(f"{self.time_steps[-1]}")
         self.lineEditTimeInterval.setText(f"{self.time_steps[1] - self.time_steps[0]}")
@@ -588,7 +590,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.total_frames += images.sizes["t"]
 
             # concatenate time steps for each fov
-            time_steps = images.timesteps.reshape(-1, self.num_fov).T
+            time_steps = images.timesteps.reshape(-1, self.num_fov).T + self.nd2_time_steps[-1, -1]
             self.nd2_time_steps = np.concatenate((self.nd2_time_steps, time_steps), axis=1)
             self.time_steps = self.nd2_time_steps[self.fov]
 
@@ -598,8 +600,13 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.lineEditEndTime.setText(f"{t : .2f}")
             t = t / self.total_frames
             self.lineEditTimeInterval.setText(f"{t : .2f}")
-            self.lineEditCurrentTime.setText("0")
             self.viewSlider.setRange(0, self.total_frames - 1)
+
+    def switch_channel(self):
+        count = self.channel_box.count()
+        idx = self.channel_box.currentIndex()
+        idx = (idx + 1) % count
+        self.channel_box.setCurrentIndex(idx)
 
     def draw_on_all_labels(self, mask: np.ndarray):
         if self.penetrate:
@@ -991,6 +998,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.label_widget.show_image()
             t = self.time_steps[index] / 60000
             self.lineEditCurrentTime.setText(f"{t : .2f}")
+            self.lineEdit_current_frame.setText(f"{index}")
 
     def label_table_select(self):
         """

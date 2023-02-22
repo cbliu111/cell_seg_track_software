@@ -1152,6 +1152,20 @@ color:rgb(255, 255, 255)</string>
                </widget>
               </item>
               <item>
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Current frame:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEdit_current_frame">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QLabel" name="labelCurrentTime">
                 <property name="text">
                  <string>Current time:</string>

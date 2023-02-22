@@ -19,6 +19,7 @@ def draw_polygon(line: list, painter: QPainter) -> None:
     if len(line) > 0:
         painter.drawLine(line[-1], line[0])
 
+
 class LabelWidgetSignals(QObject):
     read_next_frame = Signal()
     read_previous_frame = Signal()
@@ -33,6 +34,7 @@ class LabelWidgetSignals(QObject):
     undo = Signal()
     redo = Signal()
     get_all_labels_at_mouse_position = Signal(int, int)
+    change_channel = Signal()
 
 
 class LabelWidget(QWidget):
@@ -140,6 +142,7 @@ class LabelWidget(QWidget):
             Qt.Key_Q: self.signal_undo,
             Qt.Key_R: self.signal_redo,
             Qt.Key_T: self.get_labels_till_end,
+            Qt.Key_W: self.change_channel,
             # Q, W, R, T
         }
         # define render
@@ -344,6 +347,9 @@ class LabelWidget(QWidget):
     def get_labels_till_end(self):
         x, y = self.get_image_position_from_mouse()
         self.signals.get_all_labels_at_mouse_position.emit(x, y)
+
+    def change_channel(self):
+        self.signals.change_channel.emit()
 
     def signal_undo(self):
         self.signals.undo.emit()

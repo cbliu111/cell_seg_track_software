@@ -127,13 +127,15 @@ def get_label_from_hdf(hdfpath, fov, frame) -> np.ndarray:
     return label
 
 
-def get_seg_result_from_hdf(hdfpath, fov, frame) -> np.ndarray:
+def get_seg_result_from_hdf(hdfpath, fov, frame):
     """
     Get the label for current frame and current fov.
     Return None if label is not found in the hdf file.
     """
     # fov and time are stored as fov group and frame dataset as /fov_i/frame_j
     file = h5py.File(hdfpath, "r")
+    if f"/unet" not in file or f"/unet/fov_{fov}" not in file["/unet"]:
+        return None
     if f"frame_{frame}" in file[f"/unet/fov_{fov}"]:
         label = file[f"/unet/fov_{fov}/frame_{frame}"][:]
     else:
