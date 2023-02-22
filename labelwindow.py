@@ -411,13 +411,11 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.draw_mode = "draw"
         self.label_widget.set_draw()
         self.label_value = self.label_widget.label_value
-        label = self.label_widget.render.label
 
     def set_erase(self):
         self.draw_mode = "erase"
         self.label_widget.set_erase()
         self.label_value = self.label_widget.label_value
-        label = self.label_widget.render.label
 
     def set_brush_size(self, value):
         self.brush_size = value
@@ -475,9 +473,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 self.set_view_labels()
             self.is_saved = True
             self.is_first_save = False
-            QMessageBox.information(self, "Success", "hdf5 file loaded")
+            QMessageBox.information(self, "Success", "hdf5 file loaded", QMessageBox.Ok, QMessageBox.Ok)
         else:
-            QMessageBox.information(self, "Fail", "No file loaded")
+            QMessageBox.information(self, "Fail", "No file loaded", QMessageBox.Ok, QMessageBox.Ok)
             return
 
     def get_nd2_data(self):
@@ -558,7 +556,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
     def load_nd2(self):
         if self.nd2filepaths or not self.is_saved:
             choice = QMessageBox.question(self, "Info", "Do you want to save current labels?",
-                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
             if choice == QMessageBox.Yes:
                 self.save_current_label()
                 self.channel_box.clear()
@@ -801,24 +799,24 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
     def import_dir_data(self, data, start_time, time_interval):
         # TODO: implement reading data from directories and other formats
         return
-        self.images = data
-        self.time_steps.append(start_time)
-        for i in range(len(self.images)):
-            self.time_steps.append(i * time_interval)
-        if self.images is None:
-            QMessageBox.critical(self, "Error", "Data is empty")
-            return
-        else:
-            self.is_saved = False
-            self.is_first_save = True
-            self.image_path = QDir.currentPath()
-            # set slider range to the number of images of first channel
-            num_images = len(self.images[0])
-            self.viewSlider.setRange(0, num_images - 1)
-            self.lineEditStartTime.setText(f"{self.time_steps[0]}")
-            self.lineEditTimeInterval.setText(f"{time_interval}")
-            self.lineEditCurrentTime.setText(f"{self.time_steps[0]}")
-            self.lineEditEndTime.setText(f"{self.time_steps[-1]}")
+        #self.images = data
+        #self.time_steps.append(start_time)
+        #for i in range(len(self.images)):
+        #    self.time_steps.append(i * time_interval)
+        #if self.images is None:
+        #    QMessageBox.critical(self, "Error", "Data is empty")
+        #    return
+        #else:
+        #    self.is_saved = False
+        #    self.is_first_save = True
+        #    self.image_path = QDir.currentPath()
+        #    # set slider range to the number of images of first channel
+        #    num_images = len(self.images[0])
+        #    self.viewSlider.setRange(0, num_images - 1)
+        #    self.lineEditStartTime.setText(f"{self.time_steps[0]}")
+        #    self.lineEditTimeInterval.setText(f"{time_interval}")
+        #    self.lineEditCurrentTime.setText(f"{self.time_steps[0]}")
+        #    self.lineEditEndTime.setText(f"{self.time_steps[-1]}")
 
     def play(self):
         if not self.nd2filepaths:
@@ -1152,12 +1150,11 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_label(lb)
 
     def closeEvent(self, event):
-        if not self.is_saved:
-            choice = QMessageBox.question(self, "Info", "Confirm to close?", QMessageBox.Yes | QMessageBox.Cancel)
-            if choice == QMessageBox.Yes:
-                event.accept()
-            else:
-                event.ignore()
+        choice = QMessageBox.question(self, "Info", "Confirm to close?", QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Yes)
+        if choice == QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
 
 
 if __name__ == "__main__":
