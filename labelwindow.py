@@ -130,7 +130,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.signals.copy_id_at_mouse_position.connect(self.copy_label_at_mouse)
         self.label_widget.signals.paste_id_inplace.connect(self.paste)
         self.label_widget.signals.delete_id_at_mouse_position.connect(self.delete_label_at_mouse)
-        self.label_widget.signals.select_id_at_mouse_position.connect(self.select_label_at_mouse)
+        self.label_widget.signals.select_id_at_mouse_position.connect(self.get_label_at_mouse)
+        self.label_widget.signals.get_all_labels_at_mouse_position.connect(self.get_labels_till_end)
         self.label_widget.signals.draw_at_mouse_position.connect(self.draw_at_mouse)
         self.label_widget.signals.send_zoom_point.connect(self.zoom_view_widget)
         self.label_widget.signals.send_penatrate_mask.connect(self.draw_on_all_labels)
@@ -811,7 +812,18 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.buttonPlay.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
             self.timer.stop()
 
-    def select_label_at_mouse(self, x, y):
+    def get_labels_till_end(self, x, y):
+        for idx in range(self.frame_index, self.total_frames):
+            seg = get_seg_result_from_hdf(self.hdfpath, self.fov, idx)
+            lb = get_label_from_hdf(self.hdfpath, self.fov, idx)
+            pos = seg == seg[x, y]
+            lb[pos] = np.amax(lb) + 1
+            save_label(self.hdfpath, self.fov, idx, lb)
+        label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
+        self.label_widget.set_label(label)
+        self.generate_label_table_from_label(label)
+
+    def get_label_at_mouse(self, x, y):
         # if current label is 0 at mouse position
         # select label from unet segmentation results
         label = self.label_widget.render.label

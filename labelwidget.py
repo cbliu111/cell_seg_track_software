@@ -32,6 +32,7 @@ class LabelWidgetSignals(QObject):
     send_penatrate_mask = Signal(np.ndarray)
     undo = Signal()
     redo = Signal()
+    get_all_labels_at_mouse_position = Signal(int, int)
 
 
 class LabelWidget(QWidget):
@@ -51,6 +52,9 @@ class LabelWidget(QWidget):
             C: copy label at where the mouse hold
             V: paste copied label for e.g. in other frame at the same location
             X: delete label at where the mouse hold
+            Q: undo
+            R: redo
+            T: get labels from current Till end
     
     A pop menu is also implemented.
     """
@@ -135,6 +139,7 @@ class LabelWidget(QWidget):
             Qt.Key_S: self.select_id,
             Qt.Key_Q: self.signal_undo,
             Qt.Key_R: self.signal_redo,
+            Qt.Key_T: self.get_labels_till_end,
             # Q, W, R, T
         }
         # define render
@@ -335,6 +340,10 @@ class LabelWidget(QWidget):
     def select_id(self):
         x, y = self.get_image_position_from_mouse()
         self.signals.select_id_at_mouse_position.emit(x, y)
+
+    def get_labels_till_end(self):
+        x, y = self.get_image_position_from_mouse()
+        self.signals.get_all_labels_at_mouse_position.emit(x, y)
 
     def signal_undo(self):
         self.signals.undo.emit()
