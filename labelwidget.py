@@ -7,6 +7,7 @@ from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMou
 from imagerender import ImageRender
 from base import numpy_to_image, get_label_centers, DEFAULT_COLORS
 
+# TODO: scroll of the label widget should also scroll view widget
 
 def draw_polygon(line: list, painter: QPainter) -> None:
     lp = QPoint()
@@ -35,6 +36,10 @@ class LabelWidgetSignals(QObject):
     redo = Signal()
     get_all_labels_at_mouse_position = Signal(int, int)
     change_channel = Signal()
+    scroll_left = Signal()
+    scroll_right = Signal()
+    scroll_up = Signal()
+    scroll_down = Signal()
 
 
 class LabelWidget(QWidget):
@@ -197,7 +202,13 @@ class LabelWidget(QWidget):
 
         nw = int(self.width() * self.scale)
         nh = int(self.height() * self.scale)
-        self.offset = self.zoom_point * (1 - self.scale)
+        # the following keep the zoom point unchanged, so looks smoother
+        # self.offset = self.zoom_point * (1 - self.scale)
+        # the following put the zoom point at the center of the screen
+        # more convenient for handling edges
+        self.offset = QPointF(0, 0)
+        if self.scale > 1:
+            self.offset = QPointF(self.width(), self.height()) / 2 - self.zoom_point * self.scale
         self.scaled_image = self.pix_image.scaled(nw, nh, Qt.KeepAspectRatio)
 
         painter = QPainter(self)
@@ -456,21 +467,25 @@ class LabelWidget(QWidget):
         x = self.zoom_point.x()
         self.zoom_point.setX(x + self.scroll_factor)
         self.update()
+        self.signals.scroll_left.emit()
 
     def scroll_right(self):
         x = self.zoom_point.x()
         self.zoom_point.setX(x - self.scroll_factor)
         self.update()
+        self.signals.scroll_right.emit()
 
     def scroll_up(self):
         y = self.zoom_point.y()
         self.zoom_point.setY(y + self.scroll_factor)
         self.update()
+        self.signals.scroll_up.emit()
 
     def scroll_down(self):
         y = self.zoom_point.y()
         self.zoom_point.setY(y - self.scroll_factor)
         self.update()
+        self.signals.scroll_down.emit()
 
     def set_zoom_factor(self, zf=5):
         """

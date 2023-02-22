@@ -69,7 +69,10 @@ class ViewWidget(QWidget):
 
         nw = int(self.width() * self.scale)
         nh = int(self.height() * self.scale)
-        self.offset = self.zoom_point * (1 - self.scale)
+        #self.offset = self.zoom_point * (1 - self.scale)
+        self.offset = QPointF(0, 0)
+        if self.scale > 1:
+            self.offset = QPointF(self.width(), self.height()) / 2 - self.zoom_point * self.scale
         self.scaled_image = self.pix_image.scaled(nw, nh, Qt.KeepAspectRatio)
         if self._show_label:
             self.scaled_label = self.pix_label.scaled(nw, nh, Qt.KeepAspectRatio)

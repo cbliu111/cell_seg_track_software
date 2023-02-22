@@ -135,9 +135,22 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.signals.draw_at_mouse_position.connect(self.draw_at_mouse)
         self.label_widget.signals.send_zoom_point.connect(self.zoom_view_widget)
         self.label_widget.signals.send_penatrate_mask.connect(self.draw_on_all_labels)
+        # undo and redo
         self.label_widget.signals.undo.connect(self.undo)
         self.label_widget.signals.redo.connect(self.redo)
+        # change channel
         self.label_widget.signals.change_channel.connect(self.switch_channel)
+        # scroll
+        self.view_widget_left.scroll_factor = 15 * self.view_widget_left.width() / self.label_widget.width()
+        self.view_widget_right.scroll_factor = 15 * self.view_widget_right.width() / self.label_widget.width()
+        self.label_widget.signals.scroll_left.connect(self.view_widget_left.scroll_left)
+        self.label_widget.signals.scroll_left.connect(self.view_widget_right.scroll_left)
+        self.label_widget.signals.scroll_right.connect(self.view_widget_left.scroll_right)
+        self.label_widget.signals.scroll_right.connect(self.view_widget_right.scroll_right)
+        self.label_widget.signals.scroll_up.connect(self.view_widget_left.scroll_up)
+        self.label_widget.signals.scroll_up.connect(self.view_widget_right.scroll_up)
+        self.label_widget.signals.scroll_down.connect(self.view_widget_left.scroll_down)
+        self.label_widget.signals.scroll_down.connect(self.view_widget_right.scroll_down)
         self.pixmap_scale = 1
         self.brush_size = 50
 
