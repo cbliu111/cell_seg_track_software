@@ -817,9 +817,17 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             seg = get_seg_result_from_hdf(self.hdfpath, self.fov, idx)
             lb = get_label_from_hdf(self.hdfpath, self.fov, idx)
             pos = seg == seg[x, y]
-            lb[pos] = np.amax(lb) + 1
+            if seg[x, y] == 0:
+                continue
+            if lb is None:
+                lb = np.zeros_like(seg)
+                lb[pos] = 1
+            else:
+                lb[pos] = np.amax(lb) + 1
             save_label(self.hdfpath, self.fov, idx, lb)
         label = get_label_from_hdf(self.hdfpath, self.fov, self.frame_index)
+        if label is None:
+            return
         self.label_widget.set_label(label)
         self.generate_label_table_from_label(label)
 
