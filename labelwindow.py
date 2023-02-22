@@ -143,6 +143,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.signals.redo.connect(self.redo)
         # change channel
         self.label_widget.signals.change_channel.connect(self.switch_channel)
+        # change fov
+        self.label_widget.signals.next_fov.connect(self.change_to_next_fov)
+        self.label_widget.signals.previous_fov.connect(self.change_to_previous_fov)
+        # jump to first or last frame
+        self.label_widget.signals.jump_to_first_frame.connect(lambda: self.jump_to_frame(0))
+        self.label_widget.signals.jump_to_last_frame.connect(lambda: self.jump_to_frame(self.total_frames-1))
         # scroll
         self.view_widget_left.scroll_factor = 15 * self.view_widget_left.width() / self.label_widget.width()
         self.view_widget_right.scroll_factor = 15 * self.view_widget_right.width() / self.label_widget.width()
@@ -644,6 +650,18 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         idx = self.channel_box.currentIndex()
         idx = (idx + 1) % count
         self.channel_box.setCurrentIndex(idx)
+
+    def change_to_next_fov(self):
+        count = self.fov_box.count()
+        idx = self.fov_box.currentIndex()
+        idx = (idx + 1) % count
+        self.fov_box.setCurrentIndex(idx)
+
+    def change_to_previous_fov(self):
+        count = self.fov_box.count()
+        idx = self.fov_box.currentIndex()
+        idx = (idx - 1) % count
+        self.fov_box.setCurrentIndex(idx)
 
     def draw_on_all_labels(self, mask: np.ndarray):
         if self.penetrate:

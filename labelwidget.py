@@ -40,6 +40,10 @@ class LabelWidgetSignals(QObject):
     scroll_right = Signal()
     scroll_up = Signal()
     scroll_down = Signal()
+    next_fov = Signal()
+    previous_fov = Signal()
+    jump_to_first_frame = Signal()
+    jump_to_last_frame = Signal()
 
 
 class LabelWidget(QWidget):
@@ -62,6 +66,11 @@ class LabelWidget(QWidget):
             Q: undo
             R: redo
             T: get labels from current Till end
+            W: switch channel
+            N: next fov
+            P: previous fov
+            H: jump to first frame
+            L: jump to last frame
     
     A pop menu is also implemented.
     """
@@ -148,7 +157,10 @@ class LabelWidget(QWidget):
             Qt.Key_R: self.signal_redo,
             Qt.Key_T: self.get_labels_till_end,
             Qt.Key_W: self.change_channel,
-            # Q, W, R, T
+            Qt.Key_N: self.next_fov,
+            Qt.Key_P: self.previous_fov,
+            Qt.Key_H: self.jump_to_first_frame,
+            Qt.Key_L: self.jump_to_last_frame,
         }
         # define render
         self.render = ImageRender()
@@ -361,6 +373,18 @@ class LabelWidget(QWidget):
 
     def change_channel(self):
         self.signals.change_channel.emit()
+
+    def next_fov(self):
+        self.signals.next_fov.emit()
+
+    def previous_fov(self):
+        self.signals.previous_fov.emit()
+
+    def jump_to_first_frame(self):
+        self.signals.jump_to_first_frame.emit()
+
+    def jump_to_last_frame(self):
+        self.signals.jump_to_last_frame.emit()
 
     def signal_undo(self):
         self.signals.undo.emit()
