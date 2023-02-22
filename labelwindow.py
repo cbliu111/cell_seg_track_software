@@ -15,7 +15,8 @@ from PyQt5.QtCore import QCoreApplication, QObject, QTimer, Qt, QThreadPool, pyq
     QPoint, QPointF, QDir
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QMenu, QHeaderView, QMessageBox, QStyle, \
     QAbstractItemView, QFileDialog, QPushButton, QTableWidgetItem, QProgressBar
-from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QIcon, QPalette, QBrush
+from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QIcon, QPalette, QBrush, \
+    QScreen
 from base import get_label_color, save_label, get_default_path, get_label_from_hdf, get_seg_result_from_hdf, colorize
 from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
@@ -99,6 +100,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionTurn_on_penetrate_mode.triggered.connect(self.turn_on_penetrate_mode)
         self.actionTurn_off_penetrate_mode.triggered.connect(self.turn_off_penetrate_mode)
         self.actionAppend_nd2.triggered.connect(self.append_nd2)
+        self.actionSave_window_picture.triggered.connect(self.save_label_widget_picture)
 
         # ROI group
         self.fov_box.currentIndexChanged.connect(self.set_fov)
@@ -631,6 +633,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.lineEditTimeInterval.setText(f"{t : .2f}")
             self.viewSlider.setRange(0, self.total_frames - 1)
 
+    def save_label_widget_picture(self):
+        file, _ = QFileDialog.getSaveFileName(self, "Save picture", ".\\", "picture file (*.jpg)")
+        if file:
+            q = QWidget.grab(self.label_widget)
+            q.save(file, "JPG")
+
     def switch_channel(self):
         count = self.channel_box.count()
         idx = self.channel_box.currentIndex()
@@ -830,14 +838,14 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
     def import_dir_data(self, data, start_time, time_interval):
         # TODO: implement reading data from directories and other formats
         return
-        #self.images = data
-        #self.time_steps.append(start_time)
-        #for i in range(len(self.images)):
+        # self.images = data
+        # self.time_steps.append(start_time)
+        # for i in range(len(self.images)):
         #    self.time_steps.append(i * time_interval)
-        #if self.images is None:
+        # if self.images is None:
         #    QMessageBox.critical(self, "Error", "Data is empty")
         #    return
-        #else:
+        # else:
         #    self.is_saved = False
         #    self.is_first_save = True
         #    self.image_path = QDir.currentPath()
@@ -1181,7 +1189,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_label(lb)
 
     def closeEvent(self, event):
-        choice = QMessageBox.question(self, "Info", "Confirm to close?", QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Yes)
+        choice = QMessageBox.question(self, "Info", "Confirm to close?", QMessageBox.Yes | QMessageBox.Cancel,
+                                      QMessageBox.Yes)
         if choice == QMessageBox.Yes:
             event.accept()
         else:

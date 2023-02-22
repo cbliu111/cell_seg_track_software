@@ -679,6 +679,11 @@ class Ui_LabelWindow(object):
         icon15.addPixmap(QtGui.QPixmap("../icons/32x32/actions/edit-copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionAppend_nd2.setIcon(icon15)
         self.actionAppend_nd2.setObjectName("actionAppend_nd2")
+        self.actionSave_window_picture = QtWidgets.QAction(LabelWindow)
+        icon16 = QtGui.QIcon()
+        icon16.addPixmap(QtGui.QPixmap("../icons/32x32/devices/camera-photo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionSave_window_picture.setIcon(icon16)
+        self.actionSave_window_picture.setObjectName("actionSave_window_picture")
         self.menuFile.addAction(self.actionOpen_nd2)
         self.menuFile.addAction(self.actionAppend_nd2)
         self.menuFile.addAction(self.actionOpen_dir)
@@ -688,6 +693,7 @@ class Ui_LabelWindow(object):
         self.menuFile.addAction(self.actionExport_data)
         self.menuFile.addAction(self.actionExport_movie)
         self.menuFile.addAction(self.actionExit)
+        self.menuFile.addAction(self.actionSave_window_picture)
         self.menuEdit.addAction(self.actionFill_holes)
         self.menuEdit.addAction(self.actionRemove_small_pieces)
         self.menuEdit.addAction(self.actionArea_threshold)
@@ -719,9 +725,10 @@ class Ui_LabelWindow(object):
         self.toolBar.addAction(self.actionU_Net_segment)
         self.toolBar.addAction(self.actionRetrack_from_first)
         self.toolBar.addAction(self.actionRetrack_from_current)
+        self.toolBar.addAction(self.actionSave_window_picture)
         self.toolBar.addAction(self.actionExport_movie)
-        self.toolBar.addAction(self.actionManual)
         self.toolBar.addAction(self.actionExport_data)
+        self.toolBar.addAction(self.actionManual)
 
         self.retranslateUi(LabelWindow)
         self.tabWidget2.setCurrentIndex(0)
@@ -821,6 +828,7 @@ class Ui_LabelWindow(object):
         self.actionTurn_on_penetrate_mode.setToolTip(_translate("LabelWindow", "All operations on this label also apply to all labels after"))
         self.actionTurn_off_penetrate_mode.setText(_translate("LabelWindow", "Turn off penetrate mode"))
         self.actionAppend_nd2.setText(_translate("LabelWindow", "Append nd2"))
+        self.actionSave_window_picture.setText(_translate("LabelWindow", "Save window picture"))
 from labelwidget import LabelWidget
 from viewslider import ViewSlider
 from viewwidget import ViewWidget
