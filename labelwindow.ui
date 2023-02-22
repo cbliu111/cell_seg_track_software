@@ -776,6 +776,158 @@ color:rgb(255, 255, 255)</string>
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="groupBox_7">
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Scroll view</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_21">
+           <item>
+            <layout class="QGridLayout" name="gridLayout_3">
+             <item row="0" column="0">
+              <spacer name="horizontalSpacer_16">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="button_scroll_up">
+               <property name="maximumSize">
+                <size>
+                 <width>30</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-up.png</normaloff>../icons/32x32/actions/go-up.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <spacer name="horizontalSpacer_17">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item row="1" column="0">
+              <widget class="QPushButton" name="button_scroll_left">
+               <property name="maximumSize">
+                <size>
+                 <width>30</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-previous.png</normaloff>../icons/32x32/actions/go-previous.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <spacer name="horizontalSpacer_18">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item row="1" column="2">
+              <widget class="QPushButton" name="button_scroll_right">
+               <property name="maximumSize">
+                <size>
+                 <width>30</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-next.png</normaloff>../icons/32x32/actions/go-next.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <spacer name="horizontalSpacer_19">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item row="2" column="1">
+              <widget class="QPushButton" name="button_scroll_down">
+               <property name="maximumSize">
+                <size>
+                 <width>30</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset>
+                 <normaloff>../icons/32x32/actions/go-down.png</normaloff>../icons/32x32/actions/go-down.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <spacer name="horizontalSpacer_20">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer_13">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -923,7 +1075,7 @@ color:rgb(255, 255, 255)</string>
               </property>
               <property name="maximumSize">
                <size>
-                <width>130</width>
+                <width>16777215</width>
                 <height>16777215</height>
                </size>
               </property>
@@ -1327,9 +1479,9 @@ color:rgb(255, 255, 255)</string>
    <addaction name="actionU_Net_segment"/>
    <addaction name="actionRetrack_from_first"/>
    <addaction name="actionRetrack_from_current"/>
-   <addaction name="actionExport"/>
    <addaction name="actionExport_movie"/>
    <addaction name="actionManual"/>
+   <addaction name="actionExport_data"/>
   </widget>
   <action name="actionOpen_nd2">
    <property name="icon">
@@ -1445,18 +1597,6 @@ color:rgb(255, 255, 255)</string>
     <string>Delete current label ID</string>
    </property>
   </action>
-  <action name="actionExport">
-   <property name="icon">
-    <iconset>
-     <normaloff>../icons/32x32/actions/edit-redo.png</normaloff>../icons/32x32/actions/edit-redo.png</iconset>
-   </property>
-   <property name="text">
-    <string>Export</string>
-   </property>
-   <property name="toolTip">
-    <string>Export data</string>
-   </property>
-  </action>
   <action name="actionExport_movie">
    <property name="icon">
     <iconset>
@@ -1502,6 +1642,10 @@ color:rgb(255, 255, 255)</string>
    </property>
   </action>
   <action name="actionExport_data">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/32x32/actions/mail-forward.png</normaloff>../icons/32x32/actions/mail-forward.png</iconset>
+   </property>
    <property name="text">
     <string>Export data</string>
    </property>

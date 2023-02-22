@@ -178,6 +178,6 @@ class UNetDialog(QDialog, Ui_Dialog):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    win = UNetDialog(frames=100, fovs=1000)
+    win = UNetDialog(frames=100, n_fov=1000)
     win.show()
     sys.exit(app.exec())

@@ -20,6 +20,7 @@ from base import get_label_color, save_label, get_default_path, get_label_from_h
 from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
 from unetdialog import UNetDialog
+from exportdialog import ExportDialog
 
 sys.path.append("./unet")
 
@@ -78,7 +79,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionOpen_dir.triggered.connect(lambda: self.import_dialog.exec())
         self.actionLoad_hdf5.triggered.connect(self.load_other_hdf)
         self.actionSave.triggered.connect(self.save_current_label)
-        self.actionExport_data.triggered.connect(self.export_data)
+        self.actionExport_data.triggered.connect(self.show_export_dialog)
         self.actionExport_movie.triggered.connect(self.export_movie)
         self.actionExit.triggered.connect(self.close)
         self.actionLabel_opacity.triggered.connect(self.set_label_opacity)
@@ -153,6 +154,23 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.signals.scroll_down.connect(self.view_widget_right.scroll_down)
         self.pixmap_scale = 1
         self.brush_size = 50
+
+        # scroll buttons
+        self.button_scroll_up.clicked.connect(self.label_widget.scroll_up)
+        self.button_scroll_up.clicked.connect(self.view_widget_left.scroll_up)
+        self.button_scroll_up.clicked.connect(self.view_widget_right.scroll_up)
+
+        self.button_scroll_left.clicked.connect(self.label_widget.scroll_left)
+        self.button_scroll_left.clicked.connect(self.view_widget_left.scroll_left)
+        self.button_scroll_left.clicked.connect(self.view_widget_right.scroll_left)
+
+        self.button_scroll_right.clicked.connect(self.label_widget.scroll_right)
+        self.button_scroll_right.clicked.connect(self.view_widget_left.scroll_right)
+        self.button_scroll_right.clicked.connect(self.view_widget_right.scroll_right)
+
+        self.button_scroll_down.clicked.connect(self.label_widget.scroll_down)
+        self.button_scroll_down.clicked.connect(self.view_widget_left.scroll_down)
+        self.button_scroll_down.clicked.connect(self.view_widget_right.scroll_down)
 
         # label table
         self.label_table.clearContents()
@@ -699,56 +717,69 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.generate_label_table_from_label(label)
         self.progress_bar.hide()
 
-    def export_data(self):
+    def collect_cell_statistics(self, cell_list, fov, frame, label):
+        regions = skimage.measure.regionprops(label_image=label)
+        for prop in regions:
+            x, y = prop.centroid
+            stats = {
+                "Fov": fov,
+                "Frame": frame,
+                "Label": prop.label,
+                "Time": self.time_steps[frame],
+                "Area": prop.area,
+                "Centroid_X": x,
+                "Centroid_y": y,
+                "Orientation": prop.orientation,
+                "Length_major": prop.axis_major_length,
+                "Length_minor": prop.axis_minor_length,
+            }
+            for i, name in enumerate(self.channel_names):
+                fl_img = self.get_image_2d(i, frame, fov)
+                ix = prop.coords[:, 0]
+                iy = prop.coords[:, 1]
+                fl_values = fl_img[ix, iy]
+                stats[f"Mean_intensity_of_{name}"] = fl_values.mean()
+                stats[f"Total_intensity_of_{name}"] = fl_values.sum()
+                stats[f"Intensity_variance_of_{name}"] = fl_values.var()
+                stats[f"Intensity_std_of_{name}"] = fl_values.std()
+
+            cell_list.append(stats)
+
+    def show_export_dialog(self):
+        export_dialog = ExportDialog(n_frame=self.total_frames, n_fov=self.num_fov)
+        export_dialog.start_export.connect(self.export_data)
+        export_dialog.exec()
+
+    def export_data(self, fov_list, frame_list, file_path):
         """
         Export label statistics of current fov.
         Different fovs may be exported to different files.
         """
-        label_list = []
-        file, _ = QFileDialog.getSaveFileName(self, "Save csv", ".\\", "csv file (*.csv)")
-        if file:
-            self.data_export_path = file
+        if not self.nd2filepaths:
+            return
+
+        cell_list = []
+        if file_path:
+            self.data_export_path = file_path
         else:
-            self.data_export_path = get_default_path(self.nd2filepath, ".csv")
+            self.data_export_path = get_default_path(self.nd2filepaths[0], ".csv")
 
-        file = h5py.File(self.hdfpath, "r")
-
-        self.progress_bar.setRange(0, self.total_frames)
-        for frame in range(self.total_frames):
-            self.progress_bar.setValue(frame)
-            if f"frame_{frame}" in file[f"/fov_{self.fov}"]:
-                label = file[f"/fov_{self.fov}/frame_{frame}"][:]
-            else:
-                label = None
-            if label is None or np.amax(label) == 0:
-                continue
-            regions = skimage.measure.regionprops(label_image=label)
-            for prop in regions:
-                x, y = prop.centroid
-                stats = {
-                    "Label": prop.label,
-                    "Frame": frame,
-                    "Time": self.time_steps[frame],
-                    "Area": prop.area,
-                    "Centroid X": x,
-                    "Centroid y": y,
-                    "Orientation": prop.orientation,
-                    "Length major": prop.axis_major_length,
-                    "Length minor": prop.axis_minor_length,
-                }
-                for i, name in enumerate(self.channel_names):
-                    fl_img = self.get_image_2d(i, frame, self.fov)
-                    ix = prop.coords[:, 0]
-                    iy = prop.coords[:, 1]
-                    fl_values = fl_img[ix, iy]
-                    stats[f"Mean intensity of {name}"] = fl_values.mean()
-                    stats[f"Total intensity of {name}"] = fl_values.sum()
-                    stats[f"Intensity variance of {name}"] = fl_values.var()
-                label_list.append(stats)
-
-        file.close()
-        df = pd.DataFrame(label_list)
-        df = df.sort_values(["Label", "Time"])
+        # starting loop
+        steps = len(frame_list) * len(fov_list)
+        progress = 0
+        self.progress_bar.setMaximum(steps)
+        self.progress_bar.show()
+        for fov in fov_list:
+            for frame in frame_list:
+                label = get_label_from_hdf(self.hdfpath, fov, frame)
+                if label is None or np.amax(label) == 0:
+                    continue
+                self.collect_cell_statistics(cell_list, fov, frame, label)
+                progress += 1
+                self.progress_bar.setValue(progress)
+        self.progress_bar.hide()
+        df = pd.DataFrame(cell_list)
+        df = df.sort_values(["Fov", "Frame"])
         df.to_csv(self.data_export_path, index=False)
 
     def export_movie(self):
