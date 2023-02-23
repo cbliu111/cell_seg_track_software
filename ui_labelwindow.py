@@ -759,7 +759,7 @@ class Ui_LabelWindow(object):
         self.paste_button.setText(_translate("LabelWindow", "Paste"))
         self.groupBox_5.setTitle(_translate("LabelWindow", "Move current label"))
         self.groupBox_6.setTitle(_translate("LabelWindow", "Move all labels"))
-        self.groupBox_7.setTitle(_translate("LabelWindow", "Scroll view"))
+        self.groupBox_7.setTitle(_translate("LabelWindow", "Pan image"))
         self.new_label_button.setText(_translate("LabelWindow", "New"))
         self.edit_label_button.setText(_translate("LabelWindow", "Edit"))
         self.delete_label_button.setText(_translate("LabelWindow", "Delete"))

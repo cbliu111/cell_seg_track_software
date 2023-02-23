@@ -8,6 +8,7 @@ import skimage.color
 import skimage.exposure
 from skimage import img_as_float
 import moviepy.editor
+import qimage2ndarray
 import h5py
 from nd2reader import ND2Reader
 from unet_tf import hungarian as hu
@@ -22,6 +23,7 @@ from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
 from unetdialog import UNetDialog
 from exportdialog import ExportDialog
+from manualdialog import  ManualDialog
 
 sys.path.append("./unet")
 
@@ -101,6 +103,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.actionTurn_off_penetrate_mode.triggered.connect(self.turn_off_penetrate_mode)
         self.actionAppend_nd2.triggered.connect(self.append_nd2)
         self.actionSave_window_picture.triggered.connect(self.save_label_widget_picture)
+        self.actionManual.triggered.connect(self.show_manual)
 
         # ROI group
         self.fov_box.currentIndexChanged.connect(self.set_fov)
@@ -222,6 +225,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # dialog
         self.import_dialog = ImportDialog(None)
         self.import_dialog.data_loaded.connect(self.import_dir_data)
+        self.manual_dialog = ManualDialog(None)
 
         # track
         self.new_cell_id_for_track = 0
@@ -234,6 +238,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
         # toolbar
         self.toolBar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+        # hide manual when starting
+        self.manual_dialog.hide()
 
     def get_image(self, overall_frame_index):
         sum_frames = 0
@@ -814,6 +821,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         file, _ = QFileDialog.getSaveFileName(self, "Save movie", ".\\", "mp4 file (*.mp4)")
         if not file:
             return
+        while ".mp4" in file:
+            file = file[:-4]
+        file = file + ".mp4"
 
         self.progress_bar.setMaximum(self.total_frames)
         self.progress_bar.show()
@@ -821,35 +831,15 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         def make_frame(t):
             t = int(t * 4)
             self.progress_bar.setValue(t)
-            color_image = np.zeros(self.image_shape)
-            if t < self.total_frames:
-                image = self.get_image(t)
-                label = get_label_from_hdf(self.hdfpath, self.fov, t)
-                if label is None:
-                    return
-                gray_image = img_as_float(image)
-                color_image = skimage.color.gray2rgb(gray_image)
-                for lv in np.unique(label):
-                    if lv == 0:
-                        continue
-                    else:
-                        q_color = QColor(get_label_color(lv))
-                        r = q_color.red()
-                        g = q_color.green()
-                        b = q_color.blue()
-                        # multiplier = np.array([r, g, b]) / 255
-                        color_image[label == lv, 0] *= r / 255
-                        color_image[label == lv, 1] *= g / 255
-                        color_image[label == lv, 2] *= b / 255
-
-            low = 0.2 * 255
-            high = 0.9 * 255
-            img = skimage.exposure.rescale_intensity(color_image, out_range=(low, high))
-            return img
+            self.jump_to_frame(t)
+            q = QWidget.grab(self.label_widget)
+            image = q.toImage()
+            return qimage2ndarray.rgb_view(image)
 
         animation = moviepy.editor.VideoClip(make_frame, duration=self.total_frames / 4)
-        animation.write_videofile(file, fps=4)
+        animation.write_videofile(file, fps=4, codec="libx264")
         self.progress_bar.hide()
+        self.jump_to_frame(0)
         QMessageBox.information(self, "Info", "Movie ready.", QMessageBox.Ok, QMessageBox.Ok)
         # animation.write_gif("time-lapse.gif", fps=24)
 
@@ -1206,7 +1196,14 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         lb[lb == lv] = 0
         self.label_widget.set_label(lb)
 
+    def show_manual(self):
+        if self.manual_dialog.isVisible():
+            self.manual_dialog.hide()
+        else:
+            self.manual_dialog.show()
+
     def closeEvent(self, event):
+        self.save_current_label()
         choice = QMessageBox.question(self, "Info", "Confirm to close?", QMessageBox.Yes | QMessageBox.Cancel,
                                       QMessageBox.Yes)
         if choice == QMessageBox.Yes:

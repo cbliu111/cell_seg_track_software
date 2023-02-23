@@ -142,3 +142,51 @@ def get_seg_result_from_hdf(hdfpath, fov, frame):
         label = None
     file.close()
     return label
+
+
+
+#def export_movie(self):
+#    # export movie of pictures of current channel and fov
+#    # labels are turned into rgb
+#    file, _ = QFileDialog.getSaveFileName(self, "Save movie", ".\\", "mp4 file (*.mp4)")
+#    if not file:
+#        return
+
+#    self.progress_bar.setMaximum(self.total_frames)
+#    self.progress_bar.show()
+
+#    def make_frame(t):
+#        t = int(t * 4)
+#        self.progress_bar.setValue(t)
+#        color_image = np.zeros(self.image_shape)
+#        if t < self.total_frames:
+#            image = self.get_image(t)
+#            label = get_label_from_hdf(self.hdfpath, self.fov, t)
+#            if label is None:
+#                return
+#            gray_image = img_as_float(image)
+#            color_image = skimage.color.gray2rgb(gray_image)
+#            for lv in np.unique(label):
+#                if lv == 0:
+#                    continue
+#                else:
+#                    q_color = QColor(get_label_color(lv))
+#                    r = q_color.red()
+#                    g = q_color.green()
+#                    b = q_color.blue()
+#                    # multiplier = np.array([r, g, b]) / 255
+#                    color_image[label == lv, 0] *= r / 255
+#                    color_image[label == lv, 1] *= g / 255
+#                    color_image[label == lv, 2] *= b / 255
+
+#        low = 0.2 * 255
+#        high = 0.9 * 255
+#        img = skimage.exposure.rescale_intensity(color_image, out_range=(low, high))
+#        return img
+#
+#    animation = moviepy.editor.VideoClip(make_frame, duration=self.total_frames / 4)
+#    animation.write_videofile(file, fps=4)
+#    self.progress_bar.hide()
+#    QMessageBox.information(self, "Info", "Movie ready.", QMessageBox.Ok, QMessageBox.Ok)
+#    # animation.write_gif("time-lapse.gif", fps=24)
+
