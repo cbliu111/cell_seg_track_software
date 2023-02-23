@@ -1,5 +1,6 @@
 import os.path
 import sys
+import math
 import numpy as np
 import pandas as pd
 import skimage.morphology
@@ -27,6 +28,15 @@ from manualdialog import  ManualDialog
 
 sys.path.append("./unet")
 
+# determine mother-daughter relation:
+# iterate through all label values within a fov
+# find first frame where cell appear
+# if first frame is 0, label mother = 0, continue
+# calculate distance with all other cells in the same frame
+# if minimum distance is larger than 200, label mother = 0
+# locate nearest cell
+# if area is larger than 1/2 area of nearest cell, label mother = 0
+# else label as nearest cell's daughter, mother = nearest cell id
 
 class LabelWindow(QMainWindow, Ui_LabelWindow):
     """
@@ -648,6 +658,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
     def save_label_widget_picture(self):
         file, _ = QFileDialog.getSaveFileName(self, "Save picture", ".\\", "picture file (*.jpg)")
+        while ".jpg" in file:
+            file = file[:-4]
+        file = file + ".jpg"
         if file:
             q = QWidget.grab(self.label_widget)
             q.save(file, "JPG")
@@ -750,6 +763,11 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.generate_label_table_from_label(label)
         self.progress_bar.hide()
 
+    def show_export_dialog(self):
+        export_dialog = ExportDialog(n_frame=self.total_frames, n_fov=self.num_fov)
+        export_dialog.start_export.connect(self.export_data)
+        export_dialog.exec()
+
     def collect_cell_statistics(self, cell_list, fov, frame, label):
         regions = skimage.measure.regionprops(label_image=label)
         for prop in regions:
@@ -757,10 +775,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             stats = {
                 "Fov": fov,
                 "Frame": frame,
-                "Label": prop.label,
+                "Label": label[x, y],
                 "Time": self.time_steps[frame],
                 "Area": prop.area,
-                "Centroid_X": x,
+                "Centroid_x": x,
                 "Centroid_y": y,
                 "Orientation": prop.orientation,
                 "Length_major": prop.axis_major_length,
@@ -778,10 +796,39 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
             cell_list.append(stats)
 
-    def show_export_dialog(self):
-        export_dialog = ExportDialog(n_frame=self.total_frames, n_fov=self.num_fov)
-        export_dialog.start_export.connect(self.export_data)
-        export_dialog.exec()
+    def determine_mother_daughter_relation(self, df):
+        if "Mother" not in df.columns:
+            df["Mother"] = pd.Series(dtype="object")
+        fovs = np.unique(df["Fov"])
+        for fov in fovs:
+            df_fov = df[df["Fov"] == fov].copy()
+            labels = np.unique(df[df["Fov"] == fov]["Label"])
+            for lv in labels:
+                first_frame = df_fov.loc[df_fov["Label"] == lv, "Frame"].min()
+                df_frame = df_fov.loc[df_fov["Frame"] == first_frame, :]
+                df_frame = df_frame.set_index("Label")
+                x0 = df_frame.loc[lv, "Centroid_x"]
+                y0 = df_frame.loc[lv, "Centroid_y"]
+                min_dist = 1e5
+                dist_index_dict = {}
+                for i in df_frame.index:
+                    if i != lv:
+                        x = df_frame.loc[i, "Centroid_x"]
+                        y = df_frame.loc[i, "Centroid_y"]
+                        dist = math.sqrt((x - x0) ** 2 + (y - y0) ** 2)
+                        dist_index_dict[dist] = i
+                        if min_dist > dist:
+                            min_dist = dist
+                nearest_id = dist_index_dict[min_dist]
+                area0 = df_frame.loc[lv, "Area"]
+                area1 = df_frame.loc[nearest_id, "Area"]
+                if min_dist > 200:
+                    mother = lv  # itself
+                elif area0 > area1 / 2:
+                    mother = lv
+                else:
+                    mother = nearest_id
+                df_fov.loc[df_fov["Label"] == lv, "Mother"] = mother
 
     def export_data(self, fov_list, frame_list, file_path):
         """
@@ -810,10 +857,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 self.collect_cell_statistics(cell_list, fov, frame, label)
                 progress += 1
                 self.progress_bar.setValue(progress)
-        self.progress_bar.hide()
         df = pd.DataFrame(cell_list)
         df = df.sort_values(["Fov", "Frame"])
+        self.determine_mother_daughter_relation(df)
         df.to_csv(self.data_export_path, index=False)
+        self.progress_bar.hide()
+        QMessageBox.information(self, "Info", "Data exported.", QMessageBox.Ok, QMessageBox.Ok)
 
     def export_movie(self):
         # export movie of pictures of current channel and fov
@@ -975,6 +1024,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         Delete all pixels having the label value at mouse holding.
         """
+        self.collect_label_for_undo()
         label = self.label_widget.render.label
         connect_labels = skimage.measure.label(label)
         a = connect_labels == connect_labels[x, y]
@@ -1187,6 +1237,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         Delete label at the position mouse hanging.
         """
+        self.collect_label_for_undo()
         if self.label_table.rowCount() == 0:
             return
         cr = self.label_table.currentRow()

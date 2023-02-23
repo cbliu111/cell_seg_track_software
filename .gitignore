@@ -7,3 +7,5 @@
 __pycache__
 test/
 *.csv
+*.ipynb
+.ipynb_checkpoints/
