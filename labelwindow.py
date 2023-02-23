@@ -1,13 +1,11 @@
 import os.path
 import sys
-import math
 import numpy as np
 import pandas as pd
 import skimage.morphology
 import skimage.measure
 import skimage.color
 import skimage.exposure
-from skimage import img_as_float
 import moviepy.editor
 import qimage2ndarray
 import h5py
@@ -19,7 +17,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QMenu, QHeaderVi
     QAbstractItemView, QFileDialog, QPushButton, QTableWidgetItem, QProgressBar
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QKeyEvent, QPen, QMouseEvent, QIcon, QPalette, QBrush, \
     QScreen
-from base import get_label_color, save_label, get_default_path, get_label_from_hdf, get_seg_result_from_hdf, colorize
+from base import get_label_color, save_label, get_default_path, get_label_from_hdf, get_seg_result_from_hdf, \
+    determine_mother_daughter_relation
 from ui_labelwindow import Ui_LabelWindow
 from importdialog import ImportDialog
 from unetdialog import UNetDialog
@@ -796,40 +795,6 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
             cell_list.append(stats)
 
-    def determine_mother_daughter_relation(self, df):
-        if "Mother" not in df.columns:
-            df["Mother"] = pd.Series(dtype="object")
-        fovs = np.unique(df["Fov"])
-        for fov in fovs:
-            df_fov = df[df["Fov"] == fov].copy()
-            labels = np.unique(df[df["Fov"] == fov]["Label"])
-            for lv in labels:
-                first_frame = df_fov.loc[df_fov["Label"] == lv, "Frame"].min()
-                df_frame = df_fov.loc[df_fov["Frame"] == first_frame, :]
-                df_frame = df_frame.set_index("Label")
-                x0 = df_frame.loc[lv, "Centroid_x"]
-                y0 = df_frame.loc[lv, "Centroid_y"]
-                min_dist = 1e5
-                dist_index_dict = {}
-                for i in df_frame.index:
-                    if i != lv:
-                        x = df_frame.loc[i, "Centroid_x"]
-                        y = df_frame.loc[i, "Centroid_y"]
-                        dist = math.sqrt((x - x0) ** 2 + (y - y0) ** 2)
-                        dist_index_dict[dist] = i
-                        if min_dist > dist:
-                            min_dist = dist
-                nearest_id = dist_index_dict[min_dist]
-                area0 = df_frame.loc[lv, "Area"]
-                area1 = df_frame.loc[nearest_id, "Area"]
-                if min_dist > 200:
-                    mother = lv  # itself
-                elif area0 > area1 / 2:
-                    mother = lv
-                else:
-                    mother = nearest_id
-                df_fov.loc[df_fov["Label"] == lv, "Mother"] = mother
-
     def export_data(self, fov_list, frame_list, file_path):
         """
         Export label statistics of current fov.
@@ -859,7 +824,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 self.progress_bar.setValue(progress)
         df = pd.DataFrame(cell_list)
         df = df.sort_values(["Fov", "Frame"])
-        self.determine_mother_daughter_relation(df)
+        determine_mother_daughter_relation(df)
         df.to_csv(self.data_export_path, index=False)
         self.progress_bar.hide()
         QMessageBox.information(self, "Info", "Data exported.", QMessageBox.Ok, QMessageBox.Ok)

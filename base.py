@@ -1,4 +1,6 @@
 import sys
+import pandas as pd
+import math
 from skimage.measure import regionprops
 import skimage.color
 import numpy as np
@@ -144,8 +146,41 @@ def get_seg_result_from_hdf(hdfpath, fov, frame):
     return label
 
 
+def determine_mother_daughter_relation(df):
+    if "Mother" not in df.columns:
+        df["Mother"] = pd.Series(dtype="object")
+    fovs = np.unique(df["Fov"])
+    for fov in fovs:
+        df_fov = df[df["Fov"] == fov].copy()
+        labels = np.unique(df[df["Fov"] == fov]["Label"])
+        for lv in labels:
+            first_frame = df_fov.loc[df_fov["Label"] == lv, "Frame"].min()
+            df_frame = df_fov.loc[df_fov["Frame"] == first_frame, :]
+            df_frame = df_frame.set_index("Label")
+            x0 = df_frame.loc[lv, "Centroid_x"]
+            y0 = df_frame.loc[lv, "Centroid_y"]
+            min_dist = 1e5
+            dist_index_dict = {}
+            for i in df_frame.index:
+                if i != lv:
+                    x = df_frame.loc[i, "Centroid_x"]
+                    y = df_frame.loc[i, "Centroid_y"]
+                    dist = math.sqrt((x - x0) ** 2 + (y - y0) ** 2)
+                    dist_index_dict[dist] = i
+                    if min_dist > dist:
+                        min_dist = dist
+            nearest_id = dist_index_dict[min_dist]
+            area0 = df_frame.loc[lv, "Area"]
+            area1 = df_frame.loc[nearest_id, "Area"]
+            if min_dist > 200:
+                mother = lv  # itself
+            elif area0 > area1 / 2:
+                mother = lv
+            else:
+                mother = nearest_id
+            df_fov.loc[df_fov["Label"] == lv, "Mother"] = mother
 
-#def export_movie(self):
+# def export_movie(self):
 #    # export movie of pictures of current channel and fov
 #    # labels are turned into rgb
 #    file, _ = QFileDialog.getSaveFileName(self, "Save movie", ".\\", "mp4 file (*.mp4)")
@@ -189,4 +224,3 @@ def get_seg_result_from_hdf(hdfpath, fov, frame):
 #    self.progress_bar.hide()
 #    QMessageBox.information(self, "Info", "Movie ready.", QMessageBox.Ok, QMessageBox.Ok)
 #    # animation.write_gif("time-lapse.gif", fps=24)
-
