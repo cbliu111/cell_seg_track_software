@@ -151,34 +151,45 @@ def determine_mother_daughter_relation(df):
         df["Mother"] = pd.Series(dtype="object")
     fovs = np.unique(df["Fov"])
     for fov in fovs:
-        df_fov = df[df["Fov"] == fov].copy()
+        df_fov = df[df["Fov"] == fov]
         labels = np.unique(df[df["Fov"] == fov]["Label"])
-        for lv in labels:
+        for i, lv in enumerate(labels):
             first_frame = df_fov.loc[df_fov["Label"] == lv, "Frame"].min()
             df_frame = df_fov.loc[df_fov["Frame"] == first_frame, :]
             df_frame = df_frame.set_index("Label")
             x0 = df_frame.loc[lv, "Centroid_x"]
             y0 = df_frame.loc[lv, "Centroid_y"]
-            min_dist = 1e5
-            dist_index_dict = {}
-            for i in df_frame.index:
-                if i != lv:
-                    x = df_frame.loc[i, "Centroid_x"]
-                    y = df_frame.loc[i, "Centroid_y"]
-                    dist = math.sqrt((x - x0) ** 2 + (y - y0) ** 2)
-                    dist_index_dict[dist] = i
-                    if min_dist > dist:
-                        min_dist = dist
-            nearest_id = dist_index_dict[min_dist]
+
+            lv_dist_matrix = np.zeros((len(df_frame.index), 2))
+            # collect label value distance matrix
+            for j, idx in enumerate(df_frame.index):
+                # self-self distance set to a large number
+                lv_dist_matrix[j, 0] = idx  # cell label value
+                lv_dist_matrix[j, 1] = 1e5  # distance
+                if idx != lv:
+                    x = df_frame.loc[idx, "Centroid_x"]
+                    y = df_frame.loc[idx, "Centroid_y"]
+                    # calculate distance of center to cell segment bounds
+                    dist = np.sqrt((x - x0) ** 2 + (y - y0) ** 2) - df_frame.loc[idx, "Length_major"]
+                    lv_dist_matrix[j, 1] = dist
+            sort_idx = np.argsort(lv_dist_matrix[:, 1])
+            # assign to a mother
+            found = False
             area0 = df_frame.loc[lv, "Area"]
-            area1 = df_frame.loc[nearest_id, "Area"]
-            if min_dist > 200:
-                mother = lv  # itself
-            elif area0 > area1 / 2:
-                mother = lv
-            else:
-                mother = nearest_id
-            df_fov.loc[df_fov["Label"] == lv, "Mother"] = mother
+            for idx in sort_idx:
+                mother_id = lv_dist_matrix[idx, 0]
+                area1 = df_frame.loc[mother_id, "Area"]
+                if lv_dist_matrix[idx, 1] > 20:
+                    break
+                elif area1 < area0 * 2:
+                    continue
+                else:
+                    found = True
+                    df.loc[df["Label"] == lv, "Mother"] = mother_id
+                    break
+            # if mother is not found, assign mother to itself
+            if not found:
+                df.loc[df["Label"] == lv, "Mother"] = lv
 
 # def export_movie(self):
 #    # export movie of pictures of current channel and fov

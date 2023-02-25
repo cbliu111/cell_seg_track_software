@@ -27,16 +27,6 @@ from manualdialog import  ManualDialog
 
 sys.path.append("./unet")
 
-# determine mother-daughter relation:
-# iterate through all label values within a fov
-# find first frame where cell appear
-# if first frame is 0, label mother = 0, continue
-# calculate distance with all other cells in the same frame
-# if minimum distance is larger than 200, label mother = 0
-# locate nearest cell
-# if area is larger than 1/2 area of nearest cell, label mother = 0
-# else label as nearest cell's daughter, mother = nearest cell id
-
 class LabelWindow(QMainWindow, Ui_LabelWindow):
     """
     The main label window for cell segmentation, tracking and data extracting.
@@ -49,8 +39,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         # paths for data and label saving
         # self.image_path = QDir.currentPath()
         self.nd2filepaths = []
-        self.hdfpath = QDir.currentPath()
-        self.data_export_path = QDir.currentPath()
+        self.application_path = QDir("./").currentPath()
+        self.hdfpath = self.application_path
+        self.data_export_path = self.application_path
 
         # important for locating the nd2 file for reading the correct image
         self.num_frames_list = []
@@ -479,6 +470,9 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         self.label_widget.set_label(label)
         self.set_view_labels()
         self.update_label_display()
+        t = self.time_steps[self.frame_index] / 60000
+        self.lineEditCurrentTime.setText(f"{t : .2f}")
+        self.lineEditEndTime.setText(f"{self.time_steps[-1]: .2f}")
         # clear undo and redo list
         self.undo_list.clear()
         self.redo_list.clear()
@@ -532,6 +526,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         file, _ = QFileDialog.getOpenFileName(self, "Open nd2", ".\\", "nd2 file (*.nd2)")
         if file:
+            experiment = file.split("/")[-1]
+            self.window().setWindowTitle(experiment)
             # read nd2 file
             self.nd2filepaths.append(file)
             images = ND2Reader(file)
@@ -597,22 +593,61 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
 
     def load_nd2(self):
         if self.nd2filepaths or not self.is_saved:
-            choice = QMessageBox.question(self, "Info", "Do you want to save current labels?",
-                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
+            choice = QMessageBox.question(self, "Info", "Save changes and open new nd2 file?",
+                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if choice == QMessageBox.Yes:
                 self.save_current_label()
+                self.nd2filepaths = []
+                self.hdfpath = self.application_path
+                self.data_export_path = self.application_path
+                self.num_frames_list = []
+                self.channel_names = []
+                self.total_frames = 0
+                self.num_fov = 0
+                self.num_channels = 0
+                self.image_shape = (512, 512)
+                self.fov = 0
+                self.channel = 0
+                self.undo_list = []
+                self.redo_list = []
+                self.copied_label = None
+                self.selected_label = []
+                self.is_saved = True
+                self.is_first_save = True
+                self.frame_index = 0
+                self.max_label_value = 0
+                self.label_table_index = 0
+                self.nd2_time_steps = None
+                self.penetrate = False
+                self.draw_mode = "draw"
+                self.brush_size_box.setValue(50)
+                self.tool_box.setCurrentIndex(2)
+                self.pixmap_scale = 1
+                self.brush_size = 50
+                self.label_table.clearContents()
+                self.time_steps = [i for i in range(10)]
+                self.lineEditStartTime.setText("0")
+                self.lineEdit_current_frame.setText("0")
+                self.lineEditCurrentTime.setText("0")
+                self.lineEditEndTime.setText(f"{self.time_steps[-1]}")
+                self.lineEditTimeInterval.setText(f"{self.time_steps[1] - self.time_steps[0]}")
+                self.buttonPlay.setText("Play")
+                self.buttonPlay.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
+                self.viewSlider.setRange(0, 1)
+                self.viewSlider.setValue(0)
+                self.new_cell_id_for_track = 0
+                self.progress_bar.hide()
+                self.channel_box.blockSignals(True)
                 self.channel_box.clear()
+                self.channel_box.blockSignals(False)
+                self.fov_box.blockSignals(True)
                 self.fov_box.clear()
+                self.fov_box.blockSignals(False)
                 self.get_nd2_data()
-                return
-            elif choice == QMessageBox.No:
-                self.get_nd2_data()
-                return
             else:
                 return
         else:
             self.get_nd2_data()
-            return
 
     def append_nd2(self):
         file, _ = QFileDialog.getOpenFileName(self, "Open nd2", ".\\", "nd2 file (*.nd2)")
@@ -771,11 +806,12 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         regions = skimage.measure.regionprops(label_image=label)
         for prop in regions:
             x, y = prop.centroid
+            lv = label[int(x), int(y)]
             stats = {
                 "Fov": fov,
                 "Frame": frame,
-                "Label": label[x, y],
-                "Time": self.time_steps[frame],
+                "Label": lv,
+                "Time": self.nd2_time_steps[fov, frame],
                 "Area": prop.area,
                 "Centroid_x": x,
                 "Centroid_y": y,
@@ -785,6 +821,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             }
             for i, name in enumerate(self.channel_names):
                 fl_img = self.get_image_2d(i, frame, fov)
+                bg = np.mean(fl_img[label == 0])
                 ix = prop.coords[:, 0]
                 iy = prop.coords[:, 1]
                 fl_values = fl_img[ix, iy]
@@ -792,6 +829,7 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
                 stats[f"Total_intensity_of_{name}"] = fl_values.sum()
                 stats[f"Intensity_variance_of_{name}"] = fl_values.var()
                 stats[f"Intensity_std_of_{name}"] = fl_values.std()
+                stats[f"Mean_intensity_of_{name}_background"] = bg
 
             cell_list.append(stats)
 
@@ -808,6 +846,10 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
             self.data_export_path = file_path
         else:
             self.data_export_path = get_default_path(self.nd2filepaths[0], ".csv")
+
+        while ".csv" in self.data_export_path:
+            self.data_export_path = self.data_export_path[:-4]
+        self.data_export_path = self.data_export_path + ".csv"
 
         # starting loop
         steps = len(frame_list) * len(fov_list)
@@ -989,7 +1031,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         Delete all pixels having the label value at mouse holding.
         """
-        self.collect_label_for_undo()
+        label = self.label_widget.render.label
+        self.collect_label_for_undo(label)
         label = self.label_widget.render.label
         connect_labels = skimage.measure.label(label)
         a = connect_labels == connect_labels[x, y]
@@ -1045,6 +1088,8 @@ class LabelWindow(QMainWindow, Ui_LabelWindow):
         """
         Jump to frame, and update widgets accordingly. 
         """
+        self.undo_list.clear()
+        self.redo_list.clear()
         if not self.nd2filepaths:
             return
         elif 0 <= index < self.total_frames:
